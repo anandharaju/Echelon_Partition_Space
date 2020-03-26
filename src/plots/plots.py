@@ -89,7 +89,7 @@ def plot_fpr_train_vs_test(list_train_y, list_train_pred_val, list_test_y, list_
     plt.ylim(0, 2)
     plt.plot(np.mean(list_train_fpr, axis=0)[1:], np.mean(list_test_fpr, axis=0)[1:], color='black', label="FPR - Train vs Test")
     plt.legend(loc=1, prop={'size': 5})
-    plt.savefig("..\\out\\imgs\\FPR_train_vs_test.png", bbox_inches='tight')
+    plt.savefig("../out/imgs/FPR_train_vs_test.png", bbox_inches='tight')
 
 
 def plot_auc(y1, pv1, y2, pv2):
@@ -145,13 +145,13 @@ def plot_auc(y1, pv1, y2, pv2):
     plt.plot(np.mean(list_fpr_1, axis=0), np.mean(list_tpr_1, axis=0), color='r',
              label=r'Mean Tier-1 ROC (AUC = %0.5f $\pm$ %0.2f)' % (mean_auc1, std_auc1), lw=2, alpha=.8);
 
-    plt.savefig("..\\out\\imgs\\tier1_auc_1.png", bbox_inches='tight')
+    plt.savefig("../out/imgs/tier1_auc_1.png", bbox_inches='tight')
 
     plt.plot(np.mean(list_fpr_2, axis=0), np.mean(list_tpr_2, axis=0), color='b', linestyle='-.',
              label=r'Mean Reconciled ROC (AUC = %0.5f $\pm$ %0.2f)' % (mean_aucr, std_aucr), lw=2, alpha=.8);
     plt.legend(loc=1, prop={'size': 4});
 
-    plt.savefig("..\\out\\imgs\\cv_auc_1.png", bbox_inches='tight')
+    plt.savefig("../out/imgs/cv_auc_1.png", bbox_inches='tight')
 
 
 def plot_history(history, tier):
@@ -300,7 +300,7 @@ def display_probability_chart(Y, pred, threshold, plot_name):
     # ax.set_position([box.x0, box.y0 + box.height * 0.3, box.width, box.height * 0.7])
     # Put a legend below current axis
     # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=4, prop={'size': 5})
-    plt.savefig("..\\out\\imgs\\"+plot_name+".png", bbox_inches='tight')
+    plt.savefig("../out/imgs/"+plot_name+".png", bbox_inches='tight')
     # plt.show()
 
 
@@ -325,7 +325,7 @@ def display_results(args, Y, pred, selected_threshold):
         FPR = (fp/(fp+tn))*100
         FNR = (fn/(fn+tp))*100
 
-        print("%5s & %5s & %5s & %5s" % (str(tn), str(fp), str(fn), str(tp)), " \\\\\\hline", "TPR: {:0.2f}".format(TPR), "FPR: {:0.2f}".format(FPR), "FNR: {:0.2f}".format(FNR))
+        print("%5s & %5s & %5s & %5s" % (str(tn), str(fp), str(fn), str(tp)), " ///hline", "TPR: {:0.2f}".format(TPR), "FPR: {:0.2f}".format(FPR), "FNR: {:0.2f}".format(FNR))
     '''
     confidence = selected_threshold if selected_threshold is not None else args.target_confidence
     # print("Confidence - ", confidence)
@@ -351,7 +351,7 @@ def display_results(args, Y, pred, selected_threshold):
     # aucdf['fpr'] = fpr_auc
     # aucdf['tpr'] = tpr_auc
     # aucdf['thds'] = thds_auc
-    # aucdf.to_csv(project_base_path+'\\out\\result\\auc.csv', header=None, index=False)
+    # aucdf.to_csv(project_base_path+'/out/result/auc.csv', header=None, index=False)
     return auc, acc, bacc, TPR, FPR, FNR, fpr_auc, tpr_auc, thds_auc
 
 
@@ -382,7 +382,7 @@ def display_results_hat(args, Y, Yhat, pred, selected_threshold):
     # aucdf['fpr'] = fpr_auc
     # aucdf['tpr'] = tpr_auc
     # aucdf['thds'] = thds_auc
-    # aucdf.to_csv(project_base_path+'\\out\\result\\auc.csv', header=None, index=False)
+    # aucdf.to_csv(project_base_path+'/out/result/auc.csv', header=None, index=False)
     return auc, acc, bacc, TPR, FPR, FNR, fpr_auc, tpr_auc, thds_auc
 
 
@@ -398,5 +398,5 @@ def display_results_hat(args, Y, Yhat, pred, selected_threshold):
     plt.plot(np.arange(0, 1, 0.01), mean_fprr_training, color='red', label="Training FPR")
     plt.plot(np.arange(0, 1, 0.01), mean_fprr, color='blue', label="Test FPR")
     plt.plot([0.01, 0.01], [0.0, 0.11], 'black', linestyle=':', label="Target FPR")
-    plt.savefig("..\\out\\imgs\\FPR_train_vs_test_1.png", bbox_inches='tight')
+    plt.savefig("../out/imgs/FPR_train_vs_test_1.png", bbox_inches='tight')
     '''

@@ -2,13 +2,13 @@ import os
 import pandas as pd
 import shutil
 
-fp_file = '..\\out\\result\\FP.csv'
-fn_file = '..\\out\\result\\FN.csv'
-fpfn_file = '..\\out\\result\\FPandFN.csv'
-benign_file = '..\\out\\result\\benign.csv'
-malware_file = '..\\out\\result\\malware.csv'
-benign_fn_file = '..\\out\\result\\benign_fn.csv'
-malware_fp_file = '..\\out\\result\\malware_fp.csv'
+fp_file = '../out/result/FP.csv'
+fn_file = '../out/result/FN.csv'
+fpfn_file = '../out/result/FPandFN.csv'
+benign_file = '../out/result/benign.csv'
+malware_file = '../out/result/malware.csv'
+benign_fn_file = '../out/result/benign_fn.csv'
+malware_fp_file = '../out/result/malware_fp.csv'
 
 
 def filter_fp_fn_files(result_file):
@@ -104,5 +104,5 @@ def filter_malware_fp_files(result_file):
 
 
 if __name__ == '__main__':
-    filter_benign_fn_files('..\\out\\result\\echelon.result.csv')
+    filter_benign_fn_files('../out/result/echelon.result.csv')
 

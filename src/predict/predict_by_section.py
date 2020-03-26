@@ -13,13 +13,13 @@ parser = argparse.ArgumentParser(description='ECHELON TIER 1 Neural Network')
 parser.add_argument('--batch_size', type=int, default=10)
 parser.add_argument('--verbose', type=int, default=0)
 parser.add_argument('--limit', type=float, default=0.)
-parser.add_argument('--model_path', type=str, default='D:\\03_GitWorks\\echelon\\model\\')
+parser.add_argument('--model_path', type=str, default='D:/03_GitWorks/echelon/model/')
 parser.add_argument('--model_names', type=str, default=['echelon_section']) #'echelon.text', 'echelon.rdata', 'echelon.rsrc', 'echelon.data', 'echelon.pdata', 'echelon.header'])
 parser.add_argument('--model_ext', type=str, default='.h5')
-parser.add_argument('--result_path', type=str, default='D:\\03_GitWorks\\echelon\\out\\result\\')
+parser.add_argument('--result_path', type=str, default='D:/03_GitWorks/echelon/out/result/')
 parser.add_argument('--confidence_levels', type=int, default=[99]) #[40, 50, 60, 70]) # Percentage
 parser.add_argument('--target_confidence', type=int, default=70)
-parser.add_argument('--csv', type=str, default='D:\\03_GitWorks\\echelon\\out\\result\\testing.csv')
+parser.add_argument('--csv', type=str, default='D:/03_GitWorks/echelon/out/result/testing.csv')
 
 
 def predict_by_section(sections, model, fn_list, label, batch_size, verbose):
@@ -73,7 +73,7 @@ def trigger_predict_by_section():
             #print('Confusion Matrix:\t\t[Confidence: ' + str(confidence) + '%] [Acc: ' + str(acc) + "] [Balanced Acc: " + str(bacc) + ']\n   tn   fp   fn   tp')
             #print("%5s%5s%5s%5s" % (str(cm[0][0]), str(cm[0][1]), str(cm[1][0]), str(cm[1][1])))
             #print("Checking results",acc,bacc,cm)
-            print("%3s" % str(confidence), " & ", str(acc)[:6], " & %5s & %5s & %5s & %5s \\\\\\hline" % (str(cm[0][0]), str(cm[0][1]), str(cm[1][0]), str(cm[1][1]))   )#, " \\\\\n \\hline")
+            print("%3s" % str(confidence), " & ", str(acc)[:6], " & %5s & %5s & %5s & %5s ///hline" % (str(cm[0][0]), str(cm[0][1]), str(cm[1][0]), str(cm[1][1]))   )#, " //\n /hline")
             #roc = metrics.roc_curve(Y, pred > (confidence/100))
             # print("ROC Curve         : ", roc)
             #print("\n")
@@ -85,7 +85,7 @@ def trigger_predict_by_section():
         #print("Overall ROC AUC Score     : ", auc)  # , fpr, tpr)
 
         #Malconv roc auc
-        #maldf = pd.read_csv('D:\\03_GitWorks\\echelon\\out\\result\\aucmalconv.csv', header=None)
+        #maldf = pd.read_csv('D:/03_GitWorks/echelon/out/result/aucmalconv.csv', header=None)
         #malfpr = maldf[0]
         #maltpr = maldf[1]
         #plt.plot(malfpr, maltpr, label="auc=0.9983861824925196")
@@ -98,7 +98,7 @@ def trigger_predict_by_section():
         aucdf['fpr'] = fpr
         aucdf['tpr'] = tpr
         aucdf['thds'] = thds
-        aucdf.to_csv('D:\\03_GitWorks\\echelon\\out\\result\\aucechelon.csv', header=None, index=False)'''
+        aucdf.to_csv('D:/03_GitWorks/echelon/out/result/aucechelon.csv', header=None, index=False)'''
 
 
         df['predict score'] = pred
@@ -138,17 +138,17 @@ def trigger_predict_by_section():
 
 def reconcile(flag):
     print("\n\n\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   RECONCILING DATA  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n\n")
-    t1 = pd.read_csv('D:\\03_GitWorks\\echelon\\out\\result\\echelon.result.csv', header=None)
+    t1 = pd.read_csv('D:/03_GitWorks/echelon/out/result/echelon.result.csv', header=None)
     y1 = t1[1]
     p1 = t1[2]
     pv1 = t1[3]
 
-    t2 = pd.read_csv('D:\\03_GitWorks\\echelon\\out\\result\\echelon_section.result.csv', header=None)
-    t2.to_csv("D:\\03_GitWorks\\echelon\\out\\result\\echelon_reconciled.csv", header=None, index=False, mode='w')
-    mfp = pd.read_csv('D:\\03_GitWorks\\echelon\\out\\result\\malware_fp.csv', header=None)
-    mfp.to_csv("D:\\03_GitWorks\\echelon\\out\\result\\echelon_reconciled.csv", header=None, index=False, mode='a')
+    t2 = pd.read_csv('D:/03_GitWorks/echelon/out/result/echelon_section.result.csv', header=None)
+    t2.to_csv("D:/03_GitWorks/echelon/out/result/echelon_reconciled.csv", header=None, index=False, mode='w')
+    mfp = pd.read_csv('D:/03_GitWorks/echelon/out/result/malware_fp.csv', header=None)
+    mfp.to_csv("D:/03_GitWorks/echelon/out/result/echelon_reconciled.csv", header=None, index=False, mode='a')
 
-    es = pd.read_csv('D:\\03_GitWorks\\echelon\\out\\result\\echelon_reconciled.csv', header=None)
+    es = pd.read_csv('D:/03_GitWorks/echelon/out/result/echelon_reconciled.csv', header=None)
     y2 = es[1]
     p2 = es[2]
     pv2 = es[3]
@@ -176,7 +176,7 @@ def reconcile(flag):
     aucdf['fpr'] = fpr
     aucdf['tpr'] = tpr
     aucdf['thds'] = thds
-    aucdf.to_csv('D:\\03_GitWorks\\echelon\\out\\result\\aucechelon.csv', header=None, index=False)
+    aucdf.to_csv('D:/03_GitWorks/echelon/out/result/aucechelon.csv', header=None, index=False)
 
     if flag:
         plt.show()

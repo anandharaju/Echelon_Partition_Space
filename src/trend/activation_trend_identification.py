@@ -310,8 +310,8 @@ if __name__ == '__main__':
     # start_visualization_process(args)
     plots.save_stats_as_plot()
 
-    # pe = pefile.PE("D:\\08_Dataset\\benign\\git-gui.exe")
-    # parse_pe(0, "D:\\08_Dataset\\benign\\git-gui.exe", 204800, 0)
+    # pe = pefile.PE("D:/08_Dataset/benign/git-gui.exe")
+    # parse_pe(0, "D:/08_Dataset/benign/git-gui.exe", 204800, 0)
     # for section in pe.sections:
     #    print(section)
     # print(pe.OPTIONAL_HEADER, "\n", pe.NT_HEADERS, "\n", pe.FILE_HEADER, "\n", pe.RICH_HEADER, "\n", pe.DOS_HEADER,
@@ -345,8 +345,8 @@ if __name__ == '__main__':
     from scipy import stats
     keys = ['header', 'text', 'data', 'rsrc', 'pdata', 'rdata']
     for key in keys:
-        b = pd.read_csv('D:\\03_GitWorks\\echelon\\out\\result_multi\\benign.csv' + ".activation_" + key + ".csv", header=None)
-        m = pd.read_csv('D:\\03_GitWorks\\echelon\\out\\result_multi\\malware.csv' + ".activation_" + key + ".csv", header=None)
+        b = pd.read_csv('D:/03_GitWorks/echelon/out/result_multi/benign.csv' + ".activation_" + key + ".csv", header=None)
+        m = pd.read_csv('D:/03_GitWorks/echelon/out/result_multi/malware.csv' + ".activation_" + key + ".csv", header=None)
         b = np.squeeze((b.get_values()))
         m = np.squeeze((m.get_values()))
         b = (b - b.min()) / (b.max() - b.min())

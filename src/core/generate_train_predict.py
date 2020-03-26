@@ -39,9 +39,9 @@ def generate_cv_folds_data(dataset_path):
         cv_obj.val_data[index] = valdata
         cv_obj.test_data[index] = testdata
 
-        pd.concat([mastertraindata.xdf, mastertraindata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_train_"+str(index)+"_pkl.csv", header=None, index=None)
-        pd.concat([valdata.xdf, valdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_val_" + str(index)+ "_pkl.csv", header=None, index=None)
-        pd.concat([testdata.xdf, testdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH+"\\data\\master_test_"+str(index)+ "_pkl.csv", header=None, index=None)
+        pd.concat([mastertraindata.xdf, mastertraindata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + "/data/master_train_"+str(index)+"_pkl.csv", header=None, index=None)
+        pd.concat([valdata.xdf, valdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + "/data/master_val_" + str(index)+ "_pkl.csv", header=None, index=None)
+        pd.concat([testdata.xdf, testdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH+"/data/master_test_"+str(index)+ "_pkl.csv", header=None, index=None)
 
     return cv_obj
 
@@ -63,8 +63,8 @@ def train_predict(model_idx, dataset_path=None):
 
         print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> [ CV-FOLD " + str(fold_index + 1) + "/" + str(cnst.CV_FOLDS) + " ]", "Training: " + str(train_len), "Validation: " + str(val_len), "Testing: " + str(test_len))
 
-        # traindatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_train_pkl.csv", header=None)
-        # testdatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_test_pkl.csv", header=None)
+        # traindatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/master_train_pkl.csv", header=None)
+        # testdatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/master_test_pkl.csv", header=None)
         # mastertraindata.xdf, testdata.xdf = traindatadf.iloc[:, 0], testdatadf.iloc[:, 0]
         # mastertraindata.ydf, testdata.ydf = traindatadf.iloc[:, 1], testdatadf.iloc[:, 1]
 
@@ -86,8 +86,8 @@ def train_predict(model_idx, dataset_path=None):
 
     cvdf = pd.DataFrame([cv_obj.t1_mean_fpr_auc, cv_obj.t1_mean_tpr_auc, cv_obj.recon_mean_fpr_auc, cv_obj.recon_mean_tpr_auc])
     scoredf = pd.DataFrame([np.mean(cv_obj.t1_mean_auc_score_restricted), np.mean(cv_obj.t1_mean_auc_score), np.mean(cv_obj.recon_mean_auc_score_restricted), np.mean(cv_obj.recon_mean_auc_score)])
-    cvdf.to_csv(cnst.PROJECT_BASE_PATH+"\\out\\result\\mean_cv.csv", index=False, header=None)
-    scoredf.to_csv(cnst.PROJECT_BASE_PATH + "\\out\\result\\score_cv.csv", index=False, header=None)
+    cvdf.to_csv(cnst.PROJECT_BASE_PATH+"/out/result/mean_cv.csv", index=False, header=None)
+    scoredf.to_csv(cnst.PROJECT_BASE_PATH + "/out/result/score_cv.csv", index=False, header=None)
     plot_cv_auc(cv_obj)
 
         # predict.display_probability_chart(y_tier1, pred_tier1, tier1_thd, "TRAINING_TIER1_PROB_PLOT_" + str(fold + 1))

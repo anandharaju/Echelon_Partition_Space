@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import config.constants as cnst
 import numpy as np
 
-# aucdf = pd.read_csv('D:\\03_GitWorks\\echelon\\out\\result\\aucmalconv.csv', header=None)
+# aucdf = pd.read_csv('D:/03_GitWorks/echelon/out/result/aucmalconv.csv', header=None)
 # fpr = aucdf[0]
 # tpr = aucdf[1]
 
@@ -62,4 +62,4 @@ def plot_cv_auc(cv_obj):
     plt.plot([1, 1], [0, 100], 'black', linestyle=':', label="Target FPR")
     plt.legend(loc=1, prop={'size': 14})
     plt.plot([0, 2], [90, 90], 'black', linestyle='-.', label="Target TPR")
-    plt.savefig(cnst.PROJECT_BASE_PATH + "\\out\\imgs\\cv_auc.png", bbox_inches='tight')
+    plt.savefig(cnst.PROJECT_BASE_PATH + "/out/imgs/cv_auc.png", bbox_inches='tight')

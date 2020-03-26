@@ -233,9 +233,9 @@ def init(model_idx, traindata, valdata, fold_index):
     predict_t1_train_data = predict.predict_tier1(model_idx, predict_t1_train_data, fold_index)
 
     train_b1datadf = pd.concat([pd.DataFrame(predict_t1_train_data.xB1), pd.DataFrame(predict_t1_train_data.yB1)], axis=1)
-    train_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + "\\data\\b1_train_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    train_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + "/data/b1_train_"+str(fold_index)+"_pkl.csv", header=None, index=None)
 
-    train_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\b1_train_"+str(fold_index)+"_pkl.csv", header=None)  # xxs.csv
+    train_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/b1_train_"+str(fold_index)+"_pkl.csv", header=None)  # xxs.csv
     t_args.t2_x_train, t_args.t2_y_train = train_b1datadf.iloc[:, 0], train_b1datadf.iloc[:, 1]
 
     # ATI PROCESS - SELECTING QUALIFIED_SECTIONS - ### Pass B1 data
@@ -307,6 +307,6 @@ def init(model_idx, traindata, valdata, fold_index):
 if __name__ == '__main__':
     init()
 
-'''with open(join(t_args.save_path, 'history\\history'+section+'.pkl'), 'wb') as f:
-    print(join(t_args.save_path, 'history\\history'+section+'.pkl'))
+'''with open(join(t_args.save_path, 'history/history'+section+'.pkl'), 'wb') as f:
+    print(join(t_args.save_path, 'history/history'+section+'.pkl'))
     pickle.dump(section_history.history, f)'''

@@ -59,7 +59,7 @@ def analyze_dataset(check_file_size=False):
             large_file_count = 0
             os.chdir(path)
             for file in glob.glob("*.pkl"):
-                file = path + '\\' + file
+                file = path + '/' + file
                 with open(file, 'rb') as f:
                     file_count += 1
                     if check_file_size:

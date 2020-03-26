@@ -266,13 +266,13 @@ def init(model_idx, thd1, thd2, q_sections, testdata, cv_obj, fold_index):
     # plots.plot_auc(ytrain, pred_proba1, thd1, "tier1")
 
     test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xB1), pd.DataFrame(predict_t1_test_data.yB1)], axis=1)
-    test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + "\\data\\b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + "/data/b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
     test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xM1), pd.DataFrame(predict_t1_test_data.yM1)], axis=1)
-    test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + "\\data\\m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + "/data/m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
 
-    test_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\b1_test_"+str(fold_index)+"_pkl.csv", header=None)
+    test_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/b1_test_"+str(fold_index)+"_pkl.csv", header=None)
     predict_t1_test_data.xB1, predict_t1_test_data.yB1 = test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1]
-    test_m1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\m1_test_"+str(fold_index)+"_pkl.csv", header=None)
+    test_m1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/m1_test_"+str(fold_index)+"_pkl.csv", header=None)
     predict_t1_test_data.xM1, predict_t1_test_data.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
 
     # TIER-2 PREDICTION
@@ -290,18 +290,18 @@ def init(model_idx, thd1, thd2, q_sections, testdata, cv_obj, fold_index):
 if __name__ == '__main__':
     print("PREDICT MAIN")
     '''init("echelon_featuristic.h5", "echelon_featuristic_2.h5", "FUSION", None)
-    reconcile("D:\\03_GitWorks\\Huawei_echelon\\out\\result\\echelon_featuristic.h5result.csv",
-              "D:\\03_GitWorks\\Huawei_echelon\\out\\result\\echelon_featuristic_2.h5result.csv",
-              "D:\\03_GitWorks\\Huawei_echelon\\out\\result\\malware_fp.csv")'''
+    reconcile("D:/03_GitWorks/Huawei_echelon/out/result/echelon_featuristic.h5result.csv",
+              "D:/03_GitWorks/Huawei_echelon/out/result/echelon_featuristic_2.h5result.csv",
+              "D:/03_GitWorks/Huawei_echelon/out/result/malware_fp.csv")'''
 
     '''init("echelon_featuristic.h5", "echelon_featuristic_2.h5", "FUSION", None)
-    reconcile("D:\\03_GitWorks\\Huawei_echelon\\out\\result\\echelon_featuristic.h5result.csv",
-              "D:\\03_GitWorks\\Huawei_echelon\\out\\result\\echelon_featuristic_2.h5result.csv",
-              "D:\\03_GitWorks\\Huawei_echelon\\out\\result\\malware_fp.csv")'''
+    reconcile("D:/03_GitWorks/Huawei_echelon/out/result/echelon_featuristic.h5result.csv",
+              "D:/03_GitWorks/Huawei_echelon/out/result/echelon_featuristic_2.h5result.csv",
+              "D:/03_GitWorks/Huawei_echelon/out/result/malware_fp.csv")'''
 
     '''print("Prediction on Testing Data")
     #import Predict as pObj
-    testdata = pd.read_csv(cnst.PROJECT_BASE_PATH + '\\data\\small_pkl_1_1.csv', header=None)
+    testdata = pd.read_csv(cnst.PROJECT_BASE_PATH + '/data/small_pkl_1_1.csv', header=None)
     pObj_testdata = Predict(cnst.TIER1, cnst.TIER1_TARGET_FPR, testdata.iloc[:, 0].values, testdata.iloc[:, 1].values)
     pObj_testdata.thd = 67.1
     pObj_testdata = predict_tier1(0, pObj_testdata)  # TIER-1 prediction - on training data

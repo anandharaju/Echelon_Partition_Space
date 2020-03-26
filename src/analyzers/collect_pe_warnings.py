@@ -22,8 +22,8 @@ def collect_pe_warnings(path):
 
 
 if __name__ == '__main__':
-    src_path = "D:\\03_GitWorks\\echelon\\data\\training\\500kb\\"
+    src_path = "D:/03_GitWorks/echelon/data/training/500kb/"
     warnings = sorted(collect_pe_warnings(src_path))
     print(warnings)
-    with open('D:\\03_GitWorks\\echelon\\out\\result\\warnings.txt', 'w+') as f:
+    with open('D:/03_GitWorks/echelon/out/result/warnings.txt', 'w+') as f:
         f.write(str(warnings))

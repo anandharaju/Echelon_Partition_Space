@@ -12,7 +12,7 @@ import logging
             print("***************", section.Name.rstrip(b'\x00'), hex(section.VirtualAddress), hex(section.Misc_VirtualSize), section.SizeOfRawData, section.PointerToRawData)
             print(len(section.get_data()), section.get_data())'''
 
-logging.basicConfig(filename='D:\\03_GitWorks\\echelon\\log\\parse_pe\\parse_pe.log', filemode='w+')
+logging.basicConfig(filename='D:/03_GitWorks/echelon/log/parse_pe/parse_pe.log', filemode='w+')
 
 
 def parse_pe(i, file, max_len, unprocessed):
@@ -53,8 +53,8 @@ def parse_pe_section_data(file, section_to_extract):
     return extracted_details
 
 
-# parse_pe("D:\\08_Dataset\\benign\\MsiTrueColorHelper.exe")
-# pe = pefile.PE("D:\\08_Dataset\\benign\\git-gui.exe")
+# parse_pe("D:/08_Dataset/benign/MsiTrueColorHelper.exe")
+# pe = pefile.PE("D:/08_Dataset/benign/git-gui.exe")
 # print(pe.header)
 # print(pe.OPTIONAL_HEADER)
 # print(pe.NT_HEADERS)
