@@ -12,7 +12,7 @@ import logging
             print("***************", section.Name.rstrip(b'\x00'), hex(section.VirtualAddress), hex(section.Misc_VirtualSize), section.SizeOfRawData, section.PointerToRawData)
             print(len(section.get_data()), section.get_data())'''
 
-logging.basicConfig(filename='D:/03_GitWorks/echelon/log/parse_pe/parse_pe.log', filemode='w+')
+logging.basicConfig(filename='../log/parse_pe/parse_pe.log', filemode='w+')
 
 
 def parse_pe(i, file, max_len, unprocessed):

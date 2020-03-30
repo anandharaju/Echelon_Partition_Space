@@ -33,7 +33,7 @@ def generate_cv_folds_data(dataset_path):
     for index, (master_train_indices, test_indices) in enumerate(skf.split(adata.xdf, adata.ydf)):
         mastertraindata.xdf, testdata.xdf = adata.xdf[master_train_indices], adata.xdf[test_indices]
         mastertraindata.ydf, testdata.ydf = adata.ydf[master_train_indices], adata.ydf[test_indices]
-        mastertraindata.xdf, valdata.xdf, mastertraindata.ydf, valdata.ydf = train_test_split(mastertraindata.xdf, mastertraindata.ydf, test_size=0.00001, stratify=mastertraindata.ydf) # 0.00005
+        mastertraindata.xdf, valdata.xdf, mastertraindata.ydf, valdata.ydf = train_test_split(mastertraindata.xdf, mastertraindata.ydf, test_size=0.1, stratify=mastertraindata.ydf) # 0.00005
 
         cv_obj.train_data[index] = mastertraindata
         cv_obj.val_data[index] = valdata
@@ -73,7 +73,7 @@ def train_predict(model_idx, dataset_path=None):
         # ?????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
         # TIER 1&2 Training + ATI 24.10
-        thd1, thd2, q_sections = 23.60, 24.10, ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq','.data','.lif','.FISHPEP','.nkh','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn','.ifc','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda','.lrdata','.heb','.rloc','.iIEiZ','/29','.reloc','.vsp','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']  # T1TPR: 99.89 T2TPR: 2.11
+        thd1, thd2, q_sections = 23.60, 24.10, ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq ','.data','.lif ','.FISHPEP','.nkh ','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg ','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm ','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn ','.ifc ','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda ','.lrdata','.heb ','.rloc','.iIEiZ','/29','.reloc','.vsp ','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']  # T1TPR: 99.89 T2TPR: 2.11
         thd1, thd2, q_sections = train.init(model_idx, traindata, valdata, fold_index)
 
         # TIER 1&2 Prediction over Test data

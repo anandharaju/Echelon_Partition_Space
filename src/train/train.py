@@ -1,8 +1,9 @@
+import warnings
+warnings.filterwarnings("ignore")
 import time
 import os
 from os.path import join
 import argparse
-import warnings
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.models import load_model, save_model
 from utils import utils
@@ -15,7 +16,6 @@ from trend import activation_trend_identification as ati
 import config.constants as cnst
 from .train_args import DefaultTrainArguments
 from plots.plots import plot_history
-warnings.filterwarnings("ignore")
 from predict import predict
 from predict.predict_args import Predict as pObj, DefaultPredictArguments
 import numpy as np
@@ -222,7 +222,7 @@ def init(model_idx, traindata, valdata, fold_index):
 
     # ~~~~~~~~~~~~~~~~~~~
     q_sections_by_q_criteria = {0: ['.header', '.rsrc', '.text', '.data', '.rdata', '.reloc', '.pdata', '.idata', '.tls', '.bss', '.edata', '.gfids']}  # , '/4', 'INIT', '.CRT'
-    # q_sections_by_q_criteria = {0: ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq','.data','.lif','.FISHPEP','.nkh','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn','.ifc','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda','.lrdata','.heb','.rloc','.iIEiZ','/29','.reloc','.vsp','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']}
+    # q_sections_by_q_criteria = {0: ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq ','.data','.lif ','.FISHPEP','.nkh ','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg ','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm ','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn ','.ifc ','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda ','.lrdata','.heb ','.rloc','.iIEiZ','/29','.reloc','.vsp ','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']}
     if not cnst.SKIP_TIER1_TRAINING:
         train_tier1(t_args)
     # ~~~~~~~~~~~~~~~~~~~
@@ -301,7 +301,7 @@ def init(model_idx, traindata, valdata, fold_index):
     # print("Final TIER-2 Threshold - ", predict_t2_train_data_final.thd)
     print("************************ TIER 2 TRAINING - ENDED   ****************************")
     return predict_t1_train_data.thd, thd2, q_sections_selected
-    # return 23.60, 24.10, ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq','.data','.lif','.FISHPEP','.nkh','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn','.ifc','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda','.lrdata','.heb','.rloc','.iIEiZ','/29','.reloc','.vsp','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']  # T1TPR: 99.89 T2TPR: 2.11
+    # return 23.60, 24.10, ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq ','.data','.lif ','.FISHPEP','.nkh ','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg ','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm ','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn ','.ifc ','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda ','.lrdata','.heb ','.rloc','.iIEiZ','/29','.reloc','.vsp ','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']  # T1TPR: 99.89 T2TPR: 2.11
 
 
 if __name__ == '__main__':
