@@ -21,3 +21,28 @@ i.e., the number of samples intersected by the selected sections should be equal
 
 * If section size is smaller than convolution window size [500 bytes] - Reset window size to a size less than the minimum section size.
 [Caveat: Blows up memory requirement]
+
+
+# Environment Details: [PYTHON 3.5.6]
+Keras 2.2.4
+tensorflow-gpu 1.12.0
+pefile
+scikit-learn 0.21.2
+seaborn 0.9.1
+pandas
+
+numpy 1.16.3
+setuptools 40.2.0
+tensorboard 1.12.2
+urllib3 1.25.3
+
+
+
+virtualenv --no-download ~/ENV
+source ~/ENV/bin/activate
+pip install --no-index --upgrade pip
+deactivate
+
+# Compute Canada
+/home/aduraira/projects/def-wangk/aduraira
+/project/6027298/aduraira/Echelon_Linux/

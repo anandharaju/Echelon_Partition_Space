@@ -5,6 +5,7 @@ import config.constants as cnst
 import glob
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 
 
@@ -58,7 +59,7 @@ def analyze_dataset(check_file_size=False):
             large_file_count = 0
             os.chdir(path)
             for file in glob.glob("*.pkl"):
-                file = path + '/' + file
+                file = path + cnst.ESC + file
                 with open(file, 'rb') as f:
                     file_count += 1
                     if check_file_size:

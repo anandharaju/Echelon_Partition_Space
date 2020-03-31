@@ -4,8 +4,8 @@ import numpy as np
 dpi = 300
 figsize = (4, 2.7)
 
-fpr = "C:/Users/anand/Dropbox/Anand/Research/Malware_Analysis/Echelon/AAAI/images/fprds1.png"
-fnr = "C:/Users/anand/Dropbox/Anand/Research/Malware_Analysis/Echelon/AAAI/images/fnrds1.png"
+fpr = "C:\\Users\\anand\\Dropbox\\Anand\\Research\\Malware_Analysis\\Echelon\\AAAI\\images\\fprds1.png"
+fnr = "C:\\Users\\anand\\Dropbox\\Anand\\Research\\Malware_Analysis\\Echelon\\AAAI\\images\\fnrds1.png"
 
 # DS1
 xticks = 50 ,55 ,60,65,70,75,80 ,85,90,91,92,93,94,95,96 ,97,98,99
@@ -45,8 +45,8 @@ plt.yticks(fontsize=7)
 #plt.savefig(fnr, bbox_inches='tight')
 plt.show()
 
-fpr = "C:/Users/anand/Dropbox/Anand/Research/Malware_Analysis/Echelon/AAAI/images/fprds2.png"
-fnr = "C:/Users/anand/Dropbox/Anand/Research/Malware_Analysis/Echelon/AAAI/images/fnrds2.png"
+fpr = "C:\\Users\\anand\\Dropbox\\Anand\\Research\\Malware_Analysis\\Echelon\\AAAI\\images\\fprds2.png"
+fnr = "C:\\Users\\anand\\Dropbox\\Anand\\Research\\Malware_Analysis\\Echelon\\AAAI\\images\\fnrds2.png"
 
 # DS2
 fpr1 = [0.42,  0.3, 0.28, 0.28, 0.27, 0.15, 0.15, 0.15, 0.04]

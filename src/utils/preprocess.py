@@ -11,7 +11,7 @@ from keras.preprocessing.sequence import pad_sequences
 
 parser = argparse.ArgumentParser(description='ECHELON')
 parser.add_argument('--max_len', type=int, default=512000)
-parser.add_argument('--save_path', type=str, default='D:/03_GitWorks/echelon/out/preprocess/preprocessed_data.pkl')
+parser.add_argument('--save_path', type=str, default='preprocessed_data.pkl')
 parser.add_argument('csv', type=str)
 
 

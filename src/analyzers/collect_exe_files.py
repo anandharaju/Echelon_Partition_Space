@@ -54,8 +54,8 @@ def copy_files(src_path, dst_path, ext, max_size):
 
 
 if __name__ == '__main__':
-    src_path = "D:/08_Dataset/VirusTotal/repo/all"
-    dst_path = "D:/08_Dataset/aug24_malware/"
+    src_path = "D:\\08_Dataset\\VirusTotal\\repo\\all"
+    dst_path = "D:\\08_Dataset\\aug24_malware\\"
 
     ext = '*.exe'
     max_size = 512000  # bytes 500KB

@@ -28,6 +28,12 @@ class Predict:
     ypredM1 = None
     yprobM1 = None
 
+    boosting_upper_bound = None
+    boosted_xB2 = None
+    boosted_yB2 = None
+    boosted_ypredB2 = None
+    boosted_yprobB2 = None
+
     q_sections = None
 
 

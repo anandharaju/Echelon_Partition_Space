@@ -6,7 +6,6 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 from keras.models import load_model
 from utils.filter import filter_benign_fn_files, filter_malware_fp_files
-import predict.predict_by_section as pbs
 from config import constants as cnst
 from .predict_args import DefaultPredictArguments, Predict as pObj
 
@@ -96,7 +95,7 @@ def select_decision_threshold(predict_obj):
         else:
             threshold += 0.1
 
-    print("Selected Threshold: {:6.2f}".format(threshold), "TPR: {:6.2f}".format(TPR), "\tFPR: {:6.2f}".format(FPR))
+    print("Selected Threshold: {:6.2f}".format(selected_threshold), "TPR: {:6.2f}".format(TPR), "\tFPR: {:6.2f}".format(FPR))
     predict_obj.thd = selected_threshold
     predict_obj.ypred = temp_ypred
     predict_obj.tpr = TPR
@@ -107,12 +106,34 @@ def select_decision_threshold(predict_obj):
 def get_bfn_mfp(pObj):
     prediction = (pObj.yprob > (pObj.thd / 100)).astype(int)
 
-    # To filter the predicted Benign FN files from prediction results
-    brow_indices = np.where(prediction == cnst.BENIGN)[0]
-    pObj.xB1 = pObj.xtrue[brow_indices]
-    pObj.yB1 = pObj.ytrue[brow_indices]
-    pObj.yprobB1 = pObj.yprob[brow_indices]
-    pObj.ypredB1 = prediction[brow_indices]
+    if cnst.PERFORM_B2_BOOSTING:
+        if pObj.boosting_upper_bound is None:
+            fn_indices = np.all([pObj.ytrue.ravel() == cnst.MALWARE, prediction.ravel() == cnst.BENIGN], axis=0)
+            pObj.boosting_upper_bound = np.min(pObj.yprob[fn_indices])
+            print("Setting B2 boosting threshold:", pObj.boosting_upper_bound)
+
+        # To filter the predicted Benign FN files from prediction results
+        brow_indices = np.where(np.all([prediction == cnst.BENIGN, pObj.yprob >= pObj.boosting_upper_bound], axis=0))[0]
+        pObj.xB1 = pObj.xtrue[brow_indices]
+        pObj.yB1 = pObj.ytrue[brow_indices]
+        pObj.yprobB1 = pObj.yprob[brow_indices]
+        pObj.ypredB1 = prediction[brow_indices]
+
+        # To filter the benign files that can be boosted directly to B2 set
+        boosted_indices = np.where(np.all([prediction == cnst.BENIGN, pObj.yprob < pObj.boosting_upper_bound], axis=0))[0]
+        pObj.boosted_xB2 = pObj.xtrue[boosted_indices]
+        pObj.boosted_yB2 = pObj.ytrue[boosted_indices]
+        pObj.boosted_yprobB2 = pObj.yprob[boosted_indices]
+        pObj.boosted_ypredB2 = prediction[boosted_indices]
+        print("Number of files boosted to B2:", len(np.where(prediction == cnst.BENIGN)[0]), "-", len(brow_indices), "=", len(boosted_indices), "Boosting Bound:", pObj.boosting_upper_bound)
+
+    else:
+        # To filter the predicted Benign FN files from prediction results
+        brow_indices = np.where(prediction == cnst.BENIGN)[0]
+        pObj.xB1 = pObj.xtrue[brow_indices]
+        pObj.yB1 = pObj.ytrue[brow_indices]
+        pObj.yprobB1 = pObj.yprob[brow_indices]
+        pObj.ypredB1 = prediction[brow_indices]
 
     # print("\nPREDICT MODULE    Total B1 [{0}]\tGroundTruth [{1}:{2}]".format(len(brow_indices),
     # len(np.where(pObj.yB1 == cnst.BENIGN)[0]), len(np.where(pObj.yB1 == cnst.MALWARE)[0])))
@@ -204,12 +225,20 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
     print("BEFORE RECONCILIATION: [Total True Malwares:", np.sum(pt1.ytrue), "]",
           "TPs found:", np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.MALWARE], axis=0)),
           "B1 has (FNs):", np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.BENIGN], axis=0)))
-    xtruereconciled = np.concatenate((pt1.xM1, pt2.xtrue))  # pt2.xtrue contains xB1
-    ytruereconciled = np.concatenate((pt1.yM1, pt2.ytrue))
-    ypredreconciled = np.concatenate((pt1.ypredM1, pt2.ypred))
-    yprobreconciled = np.concatenate((pt1.yprobM1, pt2.yprob))
 
-    print("AFTER RECONCILIATION :", "[M1+B1] => [M1+(M2+B2)]", np.shape(xtruereconciled),
+    if cnst.PERFORM_B2_BOOSTING:
+        print(np.shape(pt1.xM1), np.shape(pt1.boosted_xB2), np.shape(pt2.xtrue))
+        xtruereconciled = np.concatenate((pt1.xM1, pt1.boosted_xB2, pt2.xtrue))  # pt2.xtrue contains xB1
+        ytruereconciled = np.concatenate((pt1.yM1, pt1.boosted_yB2, pt2.ytrue))
+        ypredreconciled = np.concatenate((pt1.ypredM1, pt1.boosted_ypredB2, pt2.ypred))
+        yprobreconciled = np.concatenate((pt1.yprobM1, pt1.boosted_yprobB2, pt2.yprob))
+    else:
+        xtruereconciled = np.concatenate((pt1.xM1, pt2.xtrue))  # pt2.xtrue contains xB1
+        ytruereconciled = np.concatenate((pt1.yM1, pt2.ytrue))
+        ypredreconciled = np.concatenate((pt1.ypredM1, pt2.ypred))
+        yprobreconciled = np.concatenate((pt1.yprobM1, pt2.yprob))
+
+    print("AFTER RECONCILIATION :", "[M1+B1] => [", "M1+(M2+B2)", "+B2_Boosted" if cnst.PERFORM_B2_BOOSTING else "", "]", np.shape(xtruereconciled),
           "TPs found: [T2] =>", np.sum(np.all([pt2.ytrue.ravel() == cnst.MALWARE, pt2.ypred.ravel() == cnst.MALWARE], axis=0)),
           "[RECON TPs] =>", np.sum(np.all([pt2.ytrue.ravel() == cnst.MALWARE, pt2.ypred.ravel() == cnst.MALWARE], axis=0)) +
           np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.MALWARE], axis=0)))
@@ -220,7 +249,13 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
     tier1_fpr = np.array([])
     probability_score = np.arange(0, 100.01, 0.1)
     for p in probability_score:
-        rtpr, rfpr = get_reconciled_tpr_fpr(pt1.yM1, pt1.yprobM1 > (p/100), pt2.ytrue, pt2.yprob > (p/100))
+        rtpr, rfpr = None, None
+        if cnst.PERFORM_B2_BOOSTING:
+            ytrue_M1B2_Boosted = np.concatenate((pt1.yM1, pt1.boosted_yB2))
+            yprob_M1B2_Boosted = np.concatenate((pt1.yprobM1, pt1.boosted_yprobB2))
+            rtpr, rfpr = get_reconciled_tpr_fpr(ytrue_M1B2_Boosted, yprob_M1B2_Boosted > (p/100), pt2.ytrue, pt2.yprob > (p/100))
+        else:
+            rtpr, rfpr = get_reconciled_tpr_fpr(pt1.yM1, pt1.yprobM1 > (p/100), pt2.ytrue, pt2.yprob > (p/100))
         reconciled_tpr = np.append(reconciled_tpr, rtpr)
         reconciled_fpr = np.append(reconciled_fpr, rfpr)
 
@@ -239,7 +274,13 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
     cv_obj.recon_mean_fpr_auc = reconciled_fpr if cv_obj.recon_mean_fpr_auc is None else np.sum([cv_obj.recon_mean_fpr_auc, reconciled_fpr], axis=0) / 2
 
     tpr1, fpr1 = get_tpr_fpr(pt1.ytrue, pt1.ypred)
-    rtpr, rfpr = get_reconciled_tpr_fpr(pt1.yM1, pt1.ypredM1, pt2.ytrue, pt2.ypred)
+    rtpr, rfpr = None, None
+    if cnst.PERFORM_B2_BOOSTING:
+        ytrue_M1B2_Boosted = np.concatenate((pt1.yM1, pt1.boosted_yB2))
+        ypred_M1B2_Boosted = np.concatenate((pt1.ypredM1, pt1.boosted_ypredB2))
+        rtpr, rfpr = get_reconciled_tpr_fpr(ytrue_M1B2_Boosted, ypred_M1B2_Boosted, pt2.ytrue, pt2.ypred)
+    else:
+        rtpr, rfpr = get_reconciled_tpr_fpr(pt1.yM1, pt1.ypredM1, pt2.ytrue, pt2.ypred)
     print("FOLD:", fold_index+1, "TIER1 TPR:", tpr1, "FPR:", fpr1, "OVERALL TPR:", rtpr, "FPR:", rfpr)
 
     cv_obj.t1_tpr_list = np.append(cv_obj.t1_tpr_list, tpr1)
@@ -255,24 +296,25 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
     return cv_obj
 
 
-def init(model_idx, thd1, thd2, q_sections, testdata, cv_obj, fold_index):
+def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, testdata, cv_obj, fold_index):
     # TIER-1 PREDICTION OVER TEST DATA
     print("\nPrediction on Testing Data - TIER1")
     predict_t1_test_data = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
     predict_t1_test_data.thd = thd1
+    predict_t1_test_data.boosting_upper_bound = boosting_upper_bound
     predict_t1_test_data = predict_tier1(model_idx, predict_t1_test_data, fold_index)
 
     # print("TPR:", predict_t1_test_data.tpr, "FPR:", predict_t1_test_data.fpr)
     # plots.plot_auc(ytrain, pred_proba1, thd1, "tier1")
 
     test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xB1), pd.DataFrame(predict_t1_test_data.yB1)], axis=1)
-    test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + "/data/b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
     test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xM1), pd.DataFrame(predict_t1_test_data.yM1)], axis=1)
-    test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + "/data/m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
 
-    test_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/b1_test_"+str(fold_index)+"_pkl.csv", header=None)
+    test_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None)
     predict_t1_test_data.xB1, predict_t1_test_data.yB1 = test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1]
-    test_m1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/m1_test_"+str(fold_index)+"_pkl.csv", header=None)
+    test_m1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None)
     predict_t1_test_data.xM1, predict_t1_test_data.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
 
     # TIER-2 PREDICTION
@@ -289,19 +331,9 @@ def init(model_idx, thd1, thd2, q_sections, testdata, cv_obj, fold_index):
 
 if __name__ == '__main__':
     print("PREDICT MAIN")
-    '''init("echelon_featuristic.h5", "echelon_featuristic_2.h5", "FUSION", None)
-    reconcile("D:/03_GitWorks/Huawei_echelon/out/result/echelon_featuristic.h5result.csv",
-              "D:/03_GitWorks/Huawei_echelon/out/result/echelon_featuristic_2.h5result.csv",
-              "D:/03_GitWorks/Huawei_echelon/out/result/malware_fp.csv")'''
-
-    '''init("echelon_featuristic.h5", "echelon_featuristic_2.h5", "FUSION", None)
-    reconcile("D:/03_GitWorks/Huawei_echelon/out/result/echelon_featuristic.h5result.csv",
-              "D:/03_GitWorks/Huawei_echelon/out/result/echelon_featuristic_2.h5result.csv",
-              "D:/03_GitWorks/Huawei_echelon/out/result/malware_fp.csv")'''
-
     '''print("Prediction on Testing Data")
     #import Predict as pObj
-    testdata = pd.read_csv(cnst.PROJECT_BASE_PATH + '/data/small_pkl_1_1.csv', header=None)
+    testdata = pd.read_csv(cnst.PROJECT_BASE_PATH + 'small_pkl_1_1.csv', header=None)
     pObj_testdata = Predict(cnst.TIER1, cnst.TIER1_TARGET_FPR, testdata.iloc[:, 0].values, testdata.iloc[:, 1].values)
     pObj_testdata.thd = 67.1
     pObj_testdata = predict_tier1(0, pObj_testdata)  # TIER-1 prediction - on training data

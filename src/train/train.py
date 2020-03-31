@@ -1,5 +1,6 @@
 import warnings
 warnings.filterwarnings("ignore")
+
 import time
 import os
 from os.path import join
@@ -27,8 +28,8 @@ import pandas as pd
 # Uncomment to RUN IN CPU ONLY
 # ############################
 # '''print('GPU found') if tf.test.gpu_device_name() else print("No GPU found")'''
-# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def train(args):
@@ -177,7 +178,7 @@ def get_model2(args):
 
 
 def train_tier1(args):
-    print("************************ TIER 1 TRAINING - STARTED ****************************")
+    print("************************ TIER 1 TRAINING - STARTED ****************************       # Samples:", len(args.t1_x_train))
     if args.tier1:
         if args.byte:             history = train(args)
         if args.featuristic:      history = train_featuristic(args)
@@ -222,7 +223,7 @@ def init(model_idx, traindata, valdata, fold_index):
 
     # ~~~~~~~~~~~~~~~~~~~
     q_sections_by_q_criteria = {0: ['.header', '.rsrc', '.text', '.data', '.rdata', '.reloc', '.pdata', '.idata', '.tls', '.bss', '.edata', '.gfids']}  # , '/4', 'INIT', '.CRT'
-    # q_sections_by_q_criteria = {0: ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq ','.data','.lif ','.FISHPEP','.nkh ','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg ','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm ','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn ','.ifc ','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda ','.lrdata','.heb ','.rloc','.iIEiZ','/29','.reloc','.vsp ','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']}
+    # q_sections_by_q_criteria = {0: ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq','.data','.lif','.FISHPEP','.nkh','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn','.ifc','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda','.lrdata','.heb','.rloc','.iIEiZ','/29','.reloc','.vsp','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']}
     if not cnst.SKIP_TIER1_TRAINING:
         train_tier1(t_args)
     # ~~~~~~~~~~~~~~~~~~~
@@ -233,9 +234,10 @@ def init(model_idx, traindata, valdata, fold_index):
     predict_t1_train_data = predict.predict_tier1(model_idx, predict_t1_train_data, fold_index)
 
     train_b1datadf = pd.concat([pd.DataFrame(predict_t1_train_data.xB1), pd.DataFrame(predict_t1_train_data.yB1)], axis=1)
-    train_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + "/data/b1_train_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    train_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_"+str(fold_index)+"_pkl.csv", header=None, index=None)
 
-    train_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/b1_train_"+str(fold_index)+"_pkl.csv", header=None)  # xxs.csv
+    print("Loading stored B1 Data")
+    train_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_"+str(fold_index)+"_pkl.csv", header=None)  # xxs.csv
     t_args.t2_x_train, t_args.t2_y_train = train_b1datadf.iloc[:, 0], train_b1datadf.iloc[:, 1]
 
     # ATI PROCESS - SELECTING QUALIFIED_SECTIONS - ### Pass B1 data
@@ -243,7 +245,7 @@ def init(model_idx, traindata, valdata, fold_index):
         t_args.t2_x_train, t_args.t2_y_train = predict_t1_train_data.xB1, predict_t1_train_data.yB1
         q_sections_by_q_criteria = ati.init(t_args) if t_args.ati else None
 
-    print("************************ TIER 2 TRAINING - STARTED ****************************")
+    print("************************ TIER 2 TRAINING - STARTED ****************************       # Samples:", len(t_args.t2_x_train))
     # Need to decide the TRAIN:VAL ratio for tier2
     t_args.t2_x_val, t_args.t2_y_val = None, None
     t_args.t2_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t2_y_train), t_args.t2_y_train)  # Class Imbalance Tackling - Setting class weights
@@ -288,7 +290,10 @@ def init(model_idx, traindata, valdata, fold_index):
     print("Selected Q_Criterion:", q_criterion_selected, "Selected Q_Sections:", q_sections_selected)
 
     # Save the best model found
-    best_t2_model.save(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
+    try:
+        best_t2_model.save(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
+    except Exception as e:
+        print("Saving of Best Model Failed", str(e))
     # save_model(model=best_t2_model, filepath=predict_args.model_path + cnst.TIER2_MODELS[model_idx], save_weights_only=False, overwrite=True)
 
     # ********* REDUNDANT
@@ -300,13 +305,13 @@ def init(model_idx, traindata, valdata, fold_index):
     # predict_t2_train_data_final = predict.predict_tier2(model_idx, predict_t2_train_data_final)
     # print("Final TIER-2 Threshold - ", predict_t2_train_data_final.thd)
     print("************************ TIER 2 TRAINING - ENDED   ****************************")
-    return predict_t1_train_data.thd, thd2, q_sections_selected
-    # return 23.60, 24.10, ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq ','.data','.lif ','.FISHPEP','.nkh ','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg ','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm ','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn ','.ifc ','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda ','.lrdata','.heb ','.rloc','.iIEiZ','/29','.reloc','.vsp ','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']  # T1TPR: 99.89 T2TPR: 2.11
+    # return None, None, thd2, None
+    return predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected
 
 
 if __name__ == '__main__':
     init()
 
-'''with open(join(t_args.save_path, 'history/history'+section+'.pkl'), 'wb') as f:
-    print(join(t_args.save_path, 'history/history'+section+'.pkl'))
+'''with open(join(t_args.save_path, 'history\\history'+section+'.pkl'), 'wb') as f:
+    print(join(t_args.save_path, 'history\\history'+section+'.pkl'))
     pickle.dump(section_history.history, f)'''

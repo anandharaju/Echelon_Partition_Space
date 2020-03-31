@@ -6,8 +6,8 @@ import config.constants as cnst
 SKIP = False
 processed_bfile_count = 0
 processed_mfile_count = 0
-target_paths = ['D:/08_Dataset/Internal/aug13_benign/',
-                'D:/08_Dataset/Internal/aug13_malware/']
+target_paths = ['Raw malware files path',
+                'Raw benign files path']
 all_file = cnst.ALL_FILE
 benign_file = cnst.BENIGN_FILE
 malware_file = cnst.MALWARE_FILE

@@ -33,15 +33,22 @@ def generate_cv_folds_data(dataset_path):
     for index, (master_train_indices, test_indices) in enumerate(skf.split(adata.xdf, adata.ydf)):
         mastertraindata.xdf, testdata.xdf = adata.xdf[master_train_indices], adata.xdf[test_indices]
         mastertraindata.ydf, testdata.ydf = adata.ydf[master_train_indices], adata.ydf[test_indices]
-        mastertraindata.xdf, valdata.xdf, mastertraindata.ydf, valdata.ydf = train_test_split(mastertraindata.xdf, mastertraindata.ydf, test_size=0.1, stratify=mastertraindata.ydf) # 0.00005
+        mastertraindata.xdf, valdata.xdf, mastertraindata.ydf, valdata.ydf = train_test_split(mastertraindata.xdf, mastertraindata.ydf, test_size=cnst.TEST_SET_SIZE, stratify=mastertraindata.ydf) # 0.00005
+
+        #pd.concat([mastertraindata.xdf, mastertraindata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_train_"+str(index)+"_pkl.csv", header=None, index=None)
+        #pd.concat([valdata.xdf, valdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_val_" + str(index)+ "_pkl.csv", header=None, index=None)
+        #pd.concat([testdata.xdf, testdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH+"\\data\\master_test_"+str(index)+ "_pkl.csv", header=None, index=None)
+
+        train_csv = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_train_" + str(index) + "_pkl.csv", header=None)
+        val_csv = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_val_" + str(index) + "_pkl.csv", header=None)
+        test_csv = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_test_" + str(index) + "_pkl.csv", header=None)
+
+        mastertraindata.xdf, valdata.xdf, testdata.xdf = train_csv.iloc[:, 0], val_csv.iloc[:, 0], test_csv.iloc[:, 0]
+        mastertraindata.ydf, valdata.ydf, testdata.ydf = train_csv.iloc[:, 1], val_csv.iloc[:, 1], test_csv.iloc[:, 1]
 
         cv_obj.train_data[index] = mastertraindata
         cv_obj.val_data[index] = valdata
         cv_obj.test_data[index] = testdata
-
-        pd.concat([mastertraindata.xdf, mastertraindata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + "/data/master_train_"+str(index)+"_pkl.csv", header=None, index=None)
-        pd.concat([valdata.xdf, valdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + "/data/master_val_" + str(index)+ "_pkl.csv", header=None, index=None)
-        pd.concat([testdata.xdf, testdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH+"/data/master_test_"+str(index)+ "_pkl.csv", header=None, index=None)
 
     return cv_obj
 
@@ -61,10 +68,12 @@ def train_predict(model_idx, dataset_path=None):
             val_len = valdata.xdf.shape[0]
             test_len = testdata.xdf.shape[0]
 
-        print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> [ CV-FOLD " + str(fold_index + 1) + "/" + str(cnst.CV_FOLDS) + " ]", "Training: " + str(train_len), "Validation: " + str(val_len), "Testing: " + str(test_len))
+        print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> [ CV-FOLD " + str(fold_index + 1) + "/" + str(cnst.CV_FOLDS) + " ]", "Training: " + str(train_len), "Validation: " + str(val_len), "Testing: " + str(test_len))
 
-        # traindatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/master_train_pkl.csv", header=None)
-        # testdatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "/data/master_test_pkl.csv", header=None)
+        #if fold_index < 1:
+        #    continue
+        # traindatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_train_pkl.csv", header=None)
+        # testdatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_test_pkl.csv", header=None)
         # mastertraindata.xdf, testdata.xdf = traindatadf.iloc[:, 0], testdatadf.iloc[:, 0]
         # mastertraindata.ydf, testdata.ydf = traindatadf.iloc[:, 1], testdatadf.iloc[:, 1]
 
@@ -73,12 +82,16 @@ def train_predict(model_idx, dataset_path=None):
         # ?????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
         # TIER 1&2 Training + ATI 24.10
-        thd1, thd2, q_sections = 23.60, 24.10, ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq ','.data','.lif ','.FISHPEP','.nkh ','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg ','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm ','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn ','.ifc ','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda ','.lrdata','.heb ','.rloc','.iIEiZ','/29','.reloc','.vsp ','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']  # T1TPR: 99.89 T2TPR: 2.11
-        thd1, thd2, q_sections = train.init(model_idx, traindata, valdata, fold_index)
+        thd1 = [39.60, 42.50, 11.00, 43.80, 43.50][fold_index]
+        thd2 = [19.40, 31.80, 45.80, 46.67, 0.10][fold_index]
+        boosting_upper_bound = [0.005994119, 0.017273573, 0.0083747255, 0.018325813, 0.0073086885][fold_index]
+        q_sections = ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq','.data','.lif','.FISHPEP','.nkh','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn','.ifc','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda','.lrdata','.heb','.rloc','.iIEiZ','/29','.reloc','.vsp','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']  # T1TPR: 99.89 T2TPR: 2.11
+        # thd1, boosting_upper_bound, thd2, q_sections =
+        # _, _, thd2, _ = train.init(model_idx, traindata, valdata, fold_index)
 
         # TIER 1&2 Prediction over Test data
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************")
-        cv_obj = predict.init(model_idx, thd1, thd2, q_sections, testdata, cv_obj, fold_index)
+        cv_obj = predict.init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, testdata, cv_obj, fold_index)
         print("**********************  PREDICTION TIER 1&2 - ENDED    ************************")
         tet = time.time() - tst
         print("\nTIME ELAPSED :", str(int(tet) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
@@ -86,8 +99,8 @@ def train_predict(model_idx, dataset_path=None):
 
     cvdf = pd.DataFrame([cv_obj.t1_mean_fpr_auc, cv_obj.t1_mean_tpr_auc, cv_obj.recon_mean_fpr_auc, cv_obj.recon_mean_tpr_auc])
     scoredf = pd.DataFrame([np.mean(cv_obj.t1_mean_auc_score_restricted), np.mean(cv_obj.t1_mean_auc_score), np.mean(cv_obj.recon_mean_auc_score_restricted), np.mean(cv_obj.recon_mean_auc_score)])
-    cvdf.to_csv(cnst.PROJECT_BASE_PATH+"/out/result/mean_cv.csv", index=False, header=None)
-    scoredf.to_csv(cnst.PROJECT_BASE_PATH + "/out/result/score_cv.csv", index=False, header=None)
+    cvdf.to_csv(cnst.PROJECT_BASE_PATH+"\\out\\result\\mean_cv.csv", index=False, header=None)
+    scoredf.to_csv(cnst.PROJECT_BASE_PATH + "\\out\\result\\score_cv.csv", index=False, header=None)
     plot_cv_auc(cv_obj)
 
         # predict.display_probability_chart(y_tier1, pred_tier1, tier1_thd, "TRAINING_TIER1_PROB_PLOT_" + str(fold + 1))

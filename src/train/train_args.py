@@ -57,4 +57,4 @@ class DefaultTrainArguments:
 
     save_path = cnst.SAVE_PATH
     model_path = cnst.MODEL_PATH
-    csv = cnst.PROJECT_BASE_PATH + '/data/training.csv'
+    csv = cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "training.csv"
