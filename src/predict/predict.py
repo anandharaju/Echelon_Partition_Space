@@ -121,11 +121,12 @@ def get_bfn_mfp(pObj):
 
         # To filter the benign files that can be boosted directly to B2 set
         boosted_indices = np.where(np.all([prediction == cnst.BENIGN, pObj.yprob < pObj.boosting_upper_bound], axis=0))[0]
+        fn_escaped_by_boosting = np.where(np.all([prediction.ravel() == cnst.BENIGN, pObj.yprob.ravel() < pObj.boosting_upper_bound, pObj.ytrue.ravel() == cnst.MALWARE], axis=0))[0]
         pObj.boosted_xB2 = pObj.xtrue[boosted_indices]
         pObj.boosted_yB2 = pObj.ytrue[boosted_indices]
         pObj.boosted_yprobB2 = pObj.yprob[boosted_indices]
         pObj.boosted_ypredB2 = prediction[boosted_indices]
-        print("Number of files boosted to B2:", len(np.where(prediction == cnst.BENIGN)[0]), "-", len(brow_indices), "=", len(boosted_indices), "Boosting Bound:", pObj.boosting_upper_bound)
+        print("Number of files boosted to B2:", len(np.where(prediction == cnst.BENIGN)[0]), "-", len(brow_indices), "=", len(boosted_indices), "Boosting Bound:", pObj.boosting_upper_bound, "Escaped FNs:", len(fn_escaped_by_boosting))
 
     else:
         # To filter the predicted Benign FN files from prediction results
@@ -145,7 +146,6 @@ def get_bfn_mfp(pObj):
     pObj.ypredM1 = prediction[mrow_indices]
 
     return pObj
-
 
 def predict_tier1(model_idx, pobj, fold_index):
     predict_args = DefaultPredictArguments()
