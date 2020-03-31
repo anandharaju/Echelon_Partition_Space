@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from keras.models import Model
 from keras import optimizers
 from keras.layers import Dense, Embedding, Conv1D, multiply, GlobalMaxPool1D, Input, Activation

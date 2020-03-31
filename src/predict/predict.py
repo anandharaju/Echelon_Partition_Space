@@ -6,7 +6,7 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 from keras.models import load_model
 from utils.filter import filter_benign_fn_files, filter_malware_fp_files
-from predict import predict_by_section as pbs
+import predict.predict_by_section as pbs
 from config import constants as cnst
 from .predict_args import DefaultPredictArguments, Predict as pObj
 
