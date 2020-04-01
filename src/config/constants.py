@@ -7,33 +7,33 @@ TIER1_PRETRAINED_MODEL = "ember_malconv.h5"
 TIER2_PRETRAINED_MODEL = "ember_malconv.h5"
 BENIGN = 0
 MALWARE = 1
-T1_TRAIN_BATCH_SIZE = 100
-T2_TRAIN_BATCH_SIZE = 100
-PREDICT_BATCH_SIZE = 200
+T1_TRAIN_BATCH_SIZE = 64
+T2_TRAIN_BATCH_SIZE = 64
+PREDICT_BATCH_SIZE = 100
 
 EPOCHS = 1
-PREDICT_VERBOSE = VERBOSE_1
+PREDICT_VERBOSE = VERBOSE_0
 RESUME = True
-PERFORM_B2_BOOSTING = False
+PERFORM_B2_BOOSTING = True
 
-LINUX_ENV = False
+LINUX_ENV = True
 ESC = "/" if LINUX_ENV else "\\"
 
 # TIER-1
 TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
-TIER1_TARGET_FPR = 0.5
-SKIP_TIER1_TRAINING = True
+TIER1_TARGET_FPR = 0.2
+SKIP_TIER1_TRAINING = False
 SKIP_ATI_PROCESSING = True
-USE_PRETRAINED_FOR_TIER1 = False
-T1_VERBOSE = VERBOSE_1
+USE_PRETRAINED_FOR_TIER1 = True
+T1_VERBOSE = VERBOSE_0
 
 # TIER-2
 TIER2 = "TIER2"
 TIER2_EPOCHS = EPOCHS
 TIER2_TARGET_FPR = 0
-USE_PRETRAINED_FOR_TIER2 = False
-T2_VERBOSE = VERBOSE_1
+USE_PRETRAINED_FOR_TIER2 = True
+T2_VERBOSE = VERBOSE_0
 
 # CROSS VALIDATION
 CV_FOLDS = 5
@@ -46,8 +46,8 @@ MAX_FILE_SIZE_LIMIT = 2**20  # 204800
 MAX_FILE_COUNT_LIMIT = None
 CONV_WINDOW_SIZE = 500
 CONV_STRIDE_SIZE = 500
-PROJECT_BASE_PATH = '/home/vivo/Echelon_Linux' if LINUX_ENV else 'D:\\03_GitWorks\\Huawei_Echelon_Reboot'
-DATA_SOURCE_PATH = '/home/vivo/pickle_files/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\'
+PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/Echelon_Linux' if LINUX_ENV else 'D:\\03_GitWorks\\Huawei_Echelon_Reboot'
+DATA_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/pickle_files/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\'
 ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'balanced_pkl.csv'  # small_pkl_1_1.csv'
 BENIGN_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_benign_pkl.csv'
 MALWARE_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_malware_pkl.csv'
