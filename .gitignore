@@ -5,6 +5,7 @@ log/
 src/config/constants.py
 bkp/
 scribble.py
+.idea
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
