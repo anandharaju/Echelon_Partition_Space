@@ -26,7 +26,6 @@ def main():
     # clean_files()
 
     model = 0  # model index
-    print("Data File:", cnst.ALL_FILE)
     gtp.train_predict(model, cnst.ALL_FILE)
     exit()
 

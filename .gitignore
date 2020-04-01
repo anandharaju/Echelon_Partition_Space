@@ -3,6 +3,8 @@
 out/
 log/
 src/config/constants.py
+bkp/
+scribble.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

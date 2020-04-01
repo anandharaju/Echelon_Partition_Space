@@ -21,10 +21,11 @@ def preprocess(file_list, max_len):
     '''
     corpus = []
     for fn in file_list:
-        if not os.path.isfile(fn):
-            print(fn, 'not exists')
+        fpath = cnst.DATA_SOURCE_PATH + fn
+        if not os.path.isfile(fpath):
+            print(fpath, 'not exists')
         else:
-            with open(fn, 'rb') as f:
+            with open(fpath, 'rb') as f:
                 # For reading image representation of byte data from pickle file
                 fjson = pickle.load(f)
                 data = fjson["whole_bytes"]  # image_256w
@@ -45,10 +46,11 @@ def preprocess_by_section(file_list, max_len, sections):
     '''
     corpus = []
     for fn in file_list:
-        if not os.path.isfile(fn):
-            print(fn, 'not exist')
+        fpath = cnst.DATA_SOURCE_PATH + fn
+        if not os.path.isfile(fpath):
+            print(fpath, 'not exists')
         else:
-            with open(fn, 'rb') as f:
+            with open(fpath, 'rb') as f:
                 # For reading image representation of section-wise byte data from pickle file
                 fjson = pickle.load(f)
                 keys = fjson["section_info"].keys()

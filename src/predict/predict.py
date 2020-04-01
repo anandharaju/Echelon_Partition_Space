@@ -129,6 +129,7 @@ def get_bfn_mfp(pObj):
         print("Number of files boosted to B2:", len(np.where(prediction == cnst.BENIGN)[0]), "-", len(brow_indices), "=", len(boosted_indices), "Boosting Bound:", pObj.boosting_upper_bound, "Escaped FNs:", len(fn_escaped_by_boosting))
 
     else:
+        print("NO BOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOSTING")
         # To filter the predicted Benign FN files from prediction results
         brow_indices = np.where(prediction == cnst.BENIGN)[0]
         pObj.xB1 = pObj.xtrue[brow_indices]
@@ -146,6 +147,7 @@ def get_bfn_mfp(pObj):
     pObj.ypredM1 = prediction[mrow_indices]
 
     return pObj
+
 
 def predict_tier1(model_idx, pobj, fold_index):
     predict_args = DefaultPredictArguments()
@@ -307,9 +309,9 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, testdata, cv_o
     # print("TPR:", predict_t1_test_data.tpr, "FPR:", predict_t1_test_data.fpr)
     # plots.plot_auc(ytrain, pred_proba1, thd1, "tier1")
 
-    test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xB1), pd.DataFrame(predict_t1_test_data.yB1)], axis=1)
+    test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xB1), pd.DataFrame(predict_t1_test_data.yB1), pd.DataFrame(predict_t1_test_data.yprobB1)], axis=1)
     test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
-    test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xM1), pd.DataFrame(predict_t1_test_data.yM1)], axis=1)
+    test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xM1), pd.DataFrame(predict_t1_test_data.yM1), pd.DataFrame(predict_t1_test_data.yprobM1)], axis=1)
     test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
 
     test_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None)
