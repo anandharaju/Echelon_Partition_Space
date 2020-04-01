@@ -70,8 +70,8 @@ def train_predict(model_idx, dataset_path=None):
 
         print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> [ CV-FOLD " + str(fold_index + 1) + "/" + str(cnst.CV_FOLDS) + " ]", "Training: " + str(train_len), "Validation: " + str(val_len), "Testing: " + str(test_len))
 
-        # if fold_index > 3:
-        #    continue
+        #if fold_index < 1:
+	#    continue
         # traindatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_train_pkl.csv", header=None)
         # testdatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_test_pkl.csv", header=None)
         # mastertraindata.xdf, testdata.xdf = traindatadf.iloc[:, 0], testdatadf.iloc[:, 0]
@@ -86,8 +86,7 @@ def train_predict(model_idx, dataset_path=None):
         thd2 = [19.40, 31.80, 45.80, 46.67, 0.10][fold_index]
         boosting_upper_bound = [0.005994119, 0.017273573, 0.0083747255, 0.018325813, 0.0073086885][fold_index]
         q_sections = ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq','.data','.lif','.FISHPEP','.nkh','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn','.ifc','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda','.lrdata','.heb','.rloc','.iIEiZ','/29','.reloc','.vsp','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']  # T1TPR: 99.89 T2TPR: 2.11
-        # thd1, boosting_upper_bound, thd2, q_sections =
-        # _, _, thd2, _ = train.init(model_idx, traindata, valdata, fold_index)
+        thd1, boosting_upper_bound, thd2, q_sections = train.init(model_idx, traindata, valdata, fold_index)
 
         # TIER 1&2 Prediction over Test data
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************")
@@ -99,8 +98,8 @@ def train_predict(model_idx, dataset_path=None):
 
     cvdf = pd.DataFrame([cv_obj.t1_mean_fpr_auc, cv_obj.t1_mean_tpr_auc, cv_obj.recon_mean_fpr_auc, cv_obj.recon_mean_tpr_auc])
     scoredf = pd.DataFrame([np.mean(cv_obj.t1_mean_auc_score_restricted), np.mean(cv_obj.t1_mean_auc_score), np.mean(cv_obj.recon_mean_auc_score_restricted), np.mean(cv_obj.recon_mean_auc_score)])
-    cvdf.to_csv(cnst.PROJECT_BASE_PATH+"\\out\\result\\mean_cv.csv", index=False, header=None)
-    scoredf.to_csv(cnst.PROJECT_BASE_PATH + "\\out\\result\\score_cv.csv", index=False, header=None)
+    cvdf.to_csv(cnst.PROJECT_BASE_PATH+cnst.ESC+"out"+cnst.ESC+"result"+cnst.ESC+"mean_cv.csv", index=False, header=None)
+    scoredf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC+"out"+cnst.ESC+"result"+cnst.ESC+"score_cv.csv", index=False, header=None)
     plot_cv_auc(cv_obj)
 
         # predict.display_probability_chart(y_tier1, pred_tier1, tier1_thd, "TRAINING_TIER1_PROB_PLOT_" + str(fold + 1))

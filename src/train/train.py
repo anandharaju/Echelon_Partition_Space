@@ -28,8 +28,8 @@ import pandas as pd
 # Uncomment to RUN IN CPU ONLY
 # ############################
 # '''print('GPU found') if tf.test.gpu_device_name() else print("No GPU found")'''
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def train(args):
