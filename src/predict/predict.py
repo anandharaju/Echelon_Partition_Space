@@ -294,6 +294,7 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
     cv_obj.t1_mean_auc_score_restricted = np.append(cv_obj.t1_mean_auc_score_restricted, metrics.roc_auc_score(pt1.ytrue, pt1.yprob, max_fpr=0.01))
     cv_obj.recon_mean_auc_score = np.append(cv_obj.recon_mean_auc_score, metrics.roc_auc_score(ytruereconciled, yprobreconciled))
     cv_obj.recon_mean_auc_score_restricted = np.append(cv_obj.recon_mean_auc_score_restricted, metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=0.01))
+    print("Tier1 Restricted AUC = %0.3f [Full AUC: %0.3f]" % (metrics.roc_auc_score(pt1.ytrue, pt1.yprob, max_fpr=0.01), metrics.roc_auc_score(pt1.ytrue, pt1.yprob)), "Recon Restricted AUC = %0.3f [Full AUC: %0.3f]" % (metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=0.01), metrics.roc_auc_score(ytruereconciled, yprobreconciled)))
 
     return cv_obj
 
@@ -325,8 +326,7 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, testdata, cv_o
     predict_t2_test_data.thd = thd2
     predict_t2_test_data.q_sections = q_sections
     predict_t2_test_data = predict_tier2(model_idx, predict_t2_test_data, fold_index)
-    # print("TPR:", predict_t2_test_data.tpr, "FPR:", predict_t2_test_data.fpr)
-
+    print("List of TPs found: ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
     # RECONCILIATION OF PREDICTION RESULTS FROM TIER - 1&2
     return reconcile(predict_t1_test_data, predict_t2_test_data, cv_obj, fold_index)
 

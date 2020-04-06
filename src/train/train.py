@@ -270,7 +270,8 @@ def init(model_idx, traindata, valdata, fold_index):
 
         # TIER-2 TRAINING & PREDICTION OVER B1 DATA for current set of q_sections
         # Retrieve TPR at FPR=0
-        train_tier2(t_args)
+        if not cnst.SKIP_TIER2_TRAINING:
+            train_tier2(t_args)
 
         print("\nPrediction on TIER-2 Training Data")
         predict_t2_train_data.thd = None

@@ -2,17 +2,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from config import constants as cnst
+import config.constants as cnst
 
 
 def plot_cv_auc():
-    cvdf = pd.read_csv('..'+cnst.ESC+'..'+cnst.ESC+'out'+cnst.ESC+'result'+cnst.ESC+'mean_cv.csv', header=None)
+    cvdf = pd.read_csv('..'+cnst.ESC+'out'+cnst.ESC+'result'+cnst.ESC+'mean_cv.csv', header=None)
     fpr1 = cvdf.loc[0]
     tpr1 = cvdf.loc[1]
     rfpr = cvdf.loc[2]
     rtpr = cvdf.loc[3]
 
-    scoredf = pd.read_csv('..'+cnst.ESC+'..'+cnst.ESC+'out'+cnst.ESC+'result'+cnst.ESC+'score_cv.csv', header=None)
+    scoredf = pd.read_csv('..'+cnst.ESC+'out'+cnst.ESC+'result'+cnst.ESC+'score_cv.csv', header=None)
     scores = scoredf.loc[:, 0].values
 
     sns.set()
@@ -33,7 +33,7 @@ def plot_cv_auc():
     plt.plot([0, 2], [90, 90], 'grey', linestyle='-.', label="Target TPR")
     plt.legend(loc=8, prop={'size': font_size})
     plt.grid(b=True, which='both')
-    plt.savefig(".."+cnst.ESC+".."+cnst.ESC+"out"+cnst.ESC+"imgs"+cnst.ESC+"cv_auc_seaborn.png", bbox_inches='tight')
+    plt.savefig(".."+cnst.ESC+"out"+cnst.ESC+"imgs"+cnst.ESC+"cv_auc_seaborn.png", bbox_inches='tight')
     plt.show()
 
 

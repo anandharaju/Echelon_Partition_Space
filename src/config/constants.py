@@ -1,3 +1,6 @@
+RESUME = True
+LINUX_ENV = True
+ESC = "/" if LINUX_ENV else "\\"
 # 42 :Answer to the Ultimate Question of Life, the Universe, and Everything
 # ~ The Hitchhiker's Guide to the Galaxy
 RANDOM_SEED = 42
@@ -8,47 +11,49 @@ TIER2_PRETRAINED_MODEL = "ember_malconv.h5"
 BENIGN = 0
 MALWARE = 1
 T1_TRAIN_BATCH_SIZE = 64
-T2_TRAIN_BATCH_SIZE = 64
+T2_TRAIN_BATCH_SIZE = 16
 PREDICT_BATCH_SIZE = 100
 
-EPOCHS = 1
-PREDICT_VERBOSE = VERBOSE_0
-RESUME = True
+T1_VERBOSE = VERBOSE_1
+T2_VERBOSE = VERBOSE_1
+PREDICT_VERBOSE = VERBOSE_1
+ATI_PREDICT_VERBOSE = VERBOSE_0
+
+#####################################################################################
+PROJECT_ROOT = 'Echelon_Linux'
+USE_PRETRAINED_FOR_TIER1 = True  # True:Malconv False:Echelon
+USE_PRETRAINED_FOR_TIER2 = True
 PERFORM_B2_BOOSTING = True
+TEST_SET_SIZE = 0.00001
 
-LINUX_ENV = True
-ESC = "/" if LINUX_ENV else "\\"
-
+EPOCHS = 1
 # TIER-1
 TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
 TIER1_TARGET_FPR = 0.1
 SKIP_TIER1_TRAINING = False
+SKIP_TIER2_TRAINING = False
 SKIP_ATI_PROCESSING = True
-USE_PRETRAINED_FOR_TIER1 = True
-T1_VERBOSE = VERBOSE_0
 
 # TIER-2
 TIER2 = "TIER2"
-TIER2_EPOCHS = EPOCHS
+TIER2_EPOCHS = EPOCHS + 1
 TIER2_TARGET_FPR = 0
-USE_PRETRAINED_FOR_TIER2 = True
-T2_VERBOSE = VERBOSE_0
+#####################################################################################
 
 # CROSS VALIDATION
 CV_FOLDS = 5
 INITIAL_FOLD = 0
 RANDOMIZE = False  # Set Random seed for True
-TEST_SET_SIZE = 0.0001
 
 #  DATA SOURCE
 MAX_FILE_SIZE_LIMIT = 2**20  # 204800
 MAX_FILE_COUNT_LIMIT = None
 CONV_WINDOW_SIZE = 500
 CONV_STRIDE_SIZE = 500
-PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/Echelon_Linux' if LINUX_ENV else 'D:\\03_GitWorks\\Huawei_Echelon_Reboot'
+PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/' + PROJECT_ROOT if LINUX_ENV else 'D:\\03_GitWorks\\Huawei_Echelon_Reboot'
 DATA_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/pickle_files/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\'
-ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'balanced_pkl.csv'  # small_pkl_1_1.csv'
+ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'ds1_linux_pkl.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
 BENIGN_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_benign_pkl.csv'
 MALWARE_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_malware_pkl.csv'
 TRAINING_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'training.csv'
@@ -75,7 +80,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [90] #[50, 75, 95]
+PERCENTILES = [20, 40, 60, 80, 90]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'

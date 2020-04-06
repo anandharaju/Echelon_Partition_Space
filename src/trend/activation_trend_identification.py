@@ -15,6 +15,20 @@ from .ati_args import SectionActivationDistribution
 import pandas as pd
 
 
+def find_qualified_sections(trend, common_trend, support):
+    btrend = trend.loc["BENIGN_ACTIVATION_MAGNITUDE"]
+    mtrend = trend.loc["MALWARE_ACTIVATION_MAGNITUDE"]
+    activation_magnitude_gaps = btrend - mtrend
+    q_criteria_by_percentiles = np.percentile(activation_magnitude_gaps, q=cnst.PERCENTILES)
+    # q_criteria = [0]
+    # q_criteria = np.append([0], q_criteria)
+    # print("Q_criteria by Deciles:", q_criteria_by_percentiles, "\n")
+    q_sections_by_q_criteria = {}
+    for q_criterion in q_criteria_by_percentiles:
+        q_sections_by_q_criteria[q_criterion] = trend.columns[activation_magnitude_gaps > q_criterion]
+    return q_sections_by_q_criteria
+    
+
 def parse_pe_pkl(file_id, file, unprocessed):
     section_bounds = []
     try:
@@ -37,6 +51,7 @@ def parse_pe_pkl(file_id, file, unprocessed):
 
 def get_feature_map(smodel, file):
     predict_args = DefaultPredictArguments()
+    predict_args.verbose = cnst.ATI_PREDICT_VERBOSE
     prediction = predict_byte(smodel, np.array([file]), predict_args)
     raw_feature_map = prediction[0]
     return raw_feature_map
@@ -128,9 +143,7 @@ def process_files(args):
     samplewise_feature_maps = []
     stunted_model = get_stunted_model(args)
 
-    # print("FMAP    MODULE    Total B1 [{0}]\tGroundTruth [{1}:{2}]".format(len(args.t2_y_train),
-    # len(np.where(args.t2_y_train == cnst.BENIGN)[0]),
-    # len(np.where(args.t2_y_train == cnst.MALWARE)[0])))
+    print("FMAP MODULE Total B1 [{0}]\tGroundTruth [{1}:{2}]".format(len(args.t2_y_train), len(np.where(args.t2_y_train == cnst.BENIGN)[0]), len(np.where(args.t2_y_train == cnst.MALWARE)[0])))
     sd = SectionActivationDistribution()
     sd.b1_count = len(args.t2_y_train)
     sd.b1_b_truth_count = len(np.where(args.t2_y_train == cnst.BENIGN)[0])
@@ -141,11 +154,11 @@ def process_files(args):
         # print("File # ", i, "Max Activation Value:", max_activation_value)
         file = pObj_fmap.xtrue[i]
         file_type = pObj_fmap.ytrue[i]  # Using Ground Truth to get trend of actual benign and malware files
-        if not os.path.exists(file):
+        if not os.path.exists(cnst.DATA_SOURCE_PATH + file):
             print(file, " does not exist. Skipping . . .")
             unprocessed += 1
             continue
-        section_bounds, unprocessed = parse_pe_pkl(i, file, unprocessed)
+        section_bounds, unprocessed = parse_pe_pkl(i, cnst.DATA_SOURCE_PATH + file, unprocessed)
         raw_feature_map = get_feature_map(stunted_model, file)
         # if len(np.shape(raw_feature_map)) == 1:
         #    feature_map = raw_feature_map.ravel()
@@ -280,20 +293,6 @@ def start_ati_process(args):
     # print("Final max_activation_value", max_activation_value)
     fmaps_trend, fmaps_common_trend, fmaps_section_support = save_activation_trend(sd)
     return fmaps_trend, fmaps_common_trend, fmaps_section_support
-
-
-def find_qualified_sections(trend, common_trend, support):
-    btrend = common_trend.loc["BENIGN_ACTIVATION_MAGNITUDE"]
-    mtrend = common_trend.loc["MALWARE_ACTIVATION_MAGNITUDE"]
-    activation_magnitude_gaps = btrend - mtrend
-    q_criteria_by_percentiles = np.percentile(activation_magnitude_gaps, q=cnst.PERCENTILES)
-    # q_criteria = [0]
-    # q_criteria = np.append([0], q_criteria)
-    # print("Q_criteria by Deciles:", q_criteria_by_percentiles, "\n")
-    q_sections_by_q_criteria = {}
-    for q_criterion in q_criteria_by_percentiles:
-        q_sections_by_q_criteria[q_criterion] = common_trend.columns[activation_magnitude_gaps > q_criterion]
-    return q_sections_by_q_criteria
 
 
 def init(args):
