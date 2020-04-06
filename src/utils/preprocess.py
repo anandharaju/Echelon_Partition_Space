@@ -7,6 +7,7 @@ import pandas as pd
 from config import constants as cnst
 from analyzers.parse_pe import parse_pe_section_data
 from keras.preprocessing.sequence import pad_sequences
+from collections import OrderedDict
 
 
 parser = argparse.ArgumentParser(description='ECHELON')
@@ -40,11 +41,12 @@ def preprocess(file_list, max_len):
     return seq, len_list
 
 
-def preprocess_by_section(file_list, max_len, sections):
+def preprocess_by_section(file_list, max_len, sections, section_map):
     '''
     Return processed data (ndarray) and original section length (list)
     '''
     corpus = []
+    section_byte_map = OrderedDict.fromkeys(section_map, value=0)
     for fn in file_list:
         fpath = cnst.DATA_SOURCE_PATH + fn
         if not os.path.isfile(fpath):
@@ -54,12 +56,29 @@ def preprocess_by_section(file_list, max_len, sections):
                 # For reading image representation of section-wise byte data from pickle file
                 fjson = pickle.load(f)
                 keys = fjson["section_info"].keys()
+
+                # Update byte map with sections that are present in current file
+                for key in keys:
+                    if key in section_map:
+                        section_byte_map[key] = 1
+                    else:
+                        print("Unknown Section in B1 samples:", key)
+
+                byte_map = []
+                byte_map_input = section_byte_map.values()  # ordered dict preserves the order of byte map
+                for input in byte_map_input:
+                    byte_map.append(input)
+
                 combined = []
                 for section in sections:
                     if section in keys:
                         combined = np.concatenate([combined, fjson["section_info"][section]["section_data"]])
                         combined = np.concatenate([combined, np.zeros(cnst.CONV_WINDOW_SIZE)])
+
+                combined = np.concatenate([combined, byte_map])
                 corpus.append(combined)
+                if len(combined) > max_len:
+                    print("Sections + Section Byte Map : exceeded max sample length by "+str(len(combined)-max_len)+" bytes")
             # corpus.append(parse_pe_section_data(fn, section))
 
     corpus = [[byte for byte in doc] for doc in corpus]
@@ -83,5 +102,5 @@ if __name__ == '__main__':
         pickle.dump(processed_data, f)
     print('Preprocessed data store in', args.save_path)'''
     st = time.time()
-    get_offline_features()
+    #get_offline_features()
     print("Time taken:", time.time() - st)

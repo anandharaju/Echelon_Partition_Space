@@ -35,6 +35,7 @@ class Predict:
     boosted_yprobB2 = None
 
     q_sections = None
+    predict_section_map = None
 
 
 class DefaultPredictArguments:

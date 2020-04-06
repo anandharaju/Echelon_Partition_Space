@@ -22,14 +22,16 @@ from predict.predict_args import Predict as pObj, DefaultPredictArguments
 import numpy as np
 from sklearn.utils import class_weight
 import pandas as pd
+from analyzers.collect_available_sections import collect_sections
 
 
-# ############################
-# Uncomment to RUN IN CPU ONLY
-# ############################
+# ####################################
+# Set USE_GPU=FALSE to RUN IN CPU ONLY
+# ####################################
 # '''print('GPU found') if tf.test.gpu_device_name() else print("No GPU found")'''
-# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+if not cnst.USE_GPU:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def train(args):
@@ -74,7 +76,7 @@ def train_by_section(args):
     # Check MAX_LEN modification is needed - based on proportion of section vs whole file size
     # args.max_len = cnst.MAX_FILE_SIZE_LIMIT + (cnst.CONV_WINDOW_SIZE * len(args.q_sections))
     history = args.t2_model_base.fit_generator(
-        utils.data_generator_by_section(args.q_sections, args.t2_x_train, args.t2_y_train, args.t2_max_len, args.t2_batch_size, args.t2_shuffle),
+        utils.data_generator_by_section(args.q_sections, args.train_section_map, args.t2_x_train, args.t2_y_train, args.t2_max_len, args.t2_batch_size, args.t2_shuffle),
         class_weight=args.t2_class_weights,
         steps_per_epoch=len(args.t2_x_train)//args.t2_batch_size + 1,
         epochs=args.t2_epochs,
@@ -245,6 +247,9 @@ def init(model_idx, traindata, valdata, fold_index):
         t_args.t2_x_train, t_args.t2_y_train = predict_t1_train_data.xB1, predict_t1_train_data.yB1
         q_sections_by_q_criteria = ati.init(t_args) if t_args.ati else None
 
+    t_args.train_section_map = collect_sections(t_args.t2_x_train, t_args.t2_y_train)
+    print("Train section map:\n", t_args.train_section_map)
+
     print("************************ TIER 2 TRAINING - STARTED ****************************       # Samples:", len(t_args.t2_x_train))
     # Need to decide the TRAIN:VAL ratio for tier2
     t_args.t2_x_val, t_args.t2_y_val = None, None
@@ -267,6 +272,7 @@ def init(model_idx, traindata, valdata, fold_index):
         # print("************************ Q_Criterion ****************************", q_criterion)
         t_args.q_sections = q_sections_by_q_criteria[q_criterion]
         predict_t2_train_data.q_sections = q_sections_by_q_criteria[q_criterion]
+        predict_t2_train_data.predict_section_map = t_args.train_section_map
 
         # TIER-2 TRAINING & PREDICTION OVER B1 DATA for current set of q_sections
         # Retrieve TPR at FPR=0
@@ -307,7 +313,7 @@ def init(model_idx, traindata, valdata, fold_index):
     # print("Final TIER-2 Threshold - ", predict_t2_train_data_final.thd)
     print("************************ TIER 2 TRAINING - ENDED   ****************************")
     # return None, None, thd2, None
-    return predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected
+    return predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
 
 
 if __name__ == '__main__':

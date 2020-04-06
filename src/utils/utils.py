@@ -45,7 +45,7 @@ def data_generator(data, labels, max_len, batch_size, shuffle):
                 print("Error during PRE-PROCESSING . . .   [", labels[i], data[i], "]", str(e))
 
 
-def data_generator_by_section(sections, data, labels, max_len, batch_size, shuffle):
+def data_generator_by_section(sections, section_map, data, labels, max_len, batch_size, shuffle):
     idx = np.arange(len(data))
     if shuffle:
         np.random.shuffle(idx)
@@ -53,7 +53,7 @@ def data_generator_by_section(sections, data, labels, max_len, batch_size, shuff
     while True:
         for i in batches:
             try:
-                xx = preprocess_by_section(data[i], max_len, sections)[0]
+                xx = preprocess_by_section(data[i], max_len, sections, section_map)[0]
                 yy = labels[i]
                 yield (xx, yy)
             except Exception as e:

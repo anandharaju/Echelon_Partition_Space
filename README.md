@@ -36,6 +36,11 @@ setuptools 40.2.0
 tensorboard 1.12.2
 urllib3 1.25.3
 
+CHECK #
+Batch sizes
+Project base path
+Data source path
+Env - Linux/Windows
 
 
 virtualenv --no-download ~/ENV

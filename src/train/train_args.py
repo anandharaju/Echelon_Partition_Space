@@ -7,6 +7,8 @@ class DefaultTrainArguments:
     fusion = False
     featuristic = False
 
+    train_section_map = None
+
     ati = True
     tier1 = True
     tier2 = True

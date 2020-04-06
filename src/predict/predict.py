@@ -21,11 +21,11 @@ def predict_byte(model, xfiles, args):
     return pred
 
 
-def predict_byte_by_section(model, xfiles, q_sections, args):
+def predict_byte_by_section(model, xfiles, q_sections, section_map, args):
     xlen = len(xfiles)
     pred_steps = xlen//args.batch_size if xlen % args.batch_size == 0 else xlen//args.batch_size + 1
     pred = model.predict_generator(
-        utils.data_generator_by_section(q_sections, xfiles, np.ones(xfiles.shape), args.max_len, args.batch_size, shuffle=False),
+        utils.data_generator_by_section(q_sections, section_map, xfiles, np.ones(xfiles.shape), args.max_len, args.batch_size, shuffle=False),
         steps=pred_steps,
         verbose=args.verbose
         )
@@ -176,7 +176,7 @@ def predict_tier2(model_idx, pobj, fold_index):
 
     if cnst.EXECUTION_TYPE[model_idx] == cnst.BYTE:
         # pbs.trigger_predict_by_section()
-        pobj.yprob = predict_byte_by_section(tier2_model, pobj.xtrue, pobj.q_sections, predict_args)
+        pobj.yprob = predict_byte_by_section(tier2_model, pobj.xtrue, pobj.q_sections, pobj.predict_section_map, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FEATURISTIC:
         pobj.yprob = predict_by_features(tier2_model, pobj.xtrue, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FUSION:
@@ -224,12 +224,15 @@ def get_tpr_fpr(yt, yp):
 def reconcile(pt1, pt2, cv_obj, fold_index):
     print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   RECONCILING DATA  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     # RECONCILE - xM1, yprobM1, xB1, pred_proba2
-    print("BEFORE RECONCILIATION: [Total True Malwares:", np.sum(pt1.ytrue), "]",
-          "TPs found:", np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.MALWARE], axis=0)),
-          "B1 has (FNs):", np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.BENIGN], axis=0)))
+    print("BEFORE RECONCILIATION: [Total True Malwares:", np.sum(pt1.ytrue), "]    M1 has => "+str(np.shape(pt1.xM1)[0]),
+          "\tTPs:", np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.MALWARE], axis=0)),
+          "\tFPs:", np.sum(np.all([pt1.ytrue.ravel() == cnst.BENIGN, pt1.ypred.ravel() == cnst.MALWARE], axis=0)))
+    print("                       [Total True Benign  :", len(np.where(pt1.ytrue.ravel() == cnst.BENIGN)[0]), "]    B1 has => "+str(len(np.where(pt1.ypred == cnst.BENIGN)[0])),
+          "\tTNs:", np.sum(np.all([pt1.ytrue.ravel() == cnst.BENIGN, pt1.ypred.ravel() == cnst.BENIGN], axis=0)),
+          "\tFNs:", np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.BENIGN], axis=0)))
 
     if cnst.PERFORM_B2_BOOSTING:
-        print(np.shape(pt1.xM1), np.shape(pt1.boosted_xB2), np.shape(pt2.xtrue))
+        print("                       Boosted:"+str(np.shape(pt1.boosted_xB2)[0]), "\tRemaining B1:"+str(np.shape(pt2.xtrue)[0]))
         xtruereconciled = np.concatenate((pt1.xM1, pt1.boosted_xB2, pt2.xtrue))  # pt2.xtrue contains xB1
         ytruereconciled = np.concatenate((pt1.yM1, pt1.boosted_yB2, pt2.ytrue))
         ypredreconciled = np.concatenate((pt1.ypredM1, pt1.boosted_ypredB2, pt2.ypred))
@@ -240,10 +243,12 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
         ypredreconciled = np.concatenate((pt1.ypredM1, pt2.ypred))
         yprobreconciled = np.concatenate((pt1.yprobM1, pt2.yprob))
 
-    print("AFTER RECONCILIATION :", "[M1+B1] => [", "M1+(M2+B2)", "+B2_Boosted" if cnst.PERFORM_B2_BOOSTING else "", "]", np.shape(xtruereconciled),
-          "TPs found: [T2] =>", np.sum(np.all([pt2.ytrue.ravel() == cnst.MALWARE, pt2.ypred.ravel() == cnst.MALWARE], axis=0)),
-          "[RECON TPs] =>", np.sum(np.all([pt2.ytrue.ravel() == cnst.MALWARE, pt2.ypred.ravel() == cnst.MALWARE], axis=0)) +
-          np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.MALWARE], axis=0)))
+    print("AFTER RECONCILIATION :", "[M1+B1] => [", "M1+(M2+B2)", "+B2_Boosted" if cnst.PERFORM_B2_BOOSTING else "", "]  =", np.shape(xtruereconciled)[0],
+          "New TPs found: [M2] =>", np.sum(np.all([pt2.ytrue.ravel() == cnst.MALWARE, pt2.ypred.ravel() == cnst.MALWARE], axis=0)),
+          "\n[RECON TPs] =>", np.sum(np.all([ytruereconciled.ravel() == cnst.MALWARE, ypredreconciled.ravel() == cnst.MALWARE], axis=0)),
+          "\tFPs:", np.sum(np.all([ytruereconciled.ravel() == cnst.BENIGN, ypredreconciled.ravel() == cnst.MALWARE], axis=0)),
+          "\n[RECON TNs] =>", np.sum(np.all([ytruereconciled.ravel() == cnst.BENIGN, ypredreconciled.ravel() == cnst.BENIGN], axis=0)),
+          "\tFNs:", np.sum(np.all([ytruereconciled.ravel() == cnst.MALWARE, ypredreconciled.ravel() == cnst.BENIGN], axis=0)))
 
     reconciled_tpr = np.array([])
     reconciled_fpr = np.array([])
@@ -299,7 +304,7 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
     return cv_obj
 
 
-def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, testdata, cv_obj, fold_index):
+def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, testdata, cv_obj, fold_index):
     # TIER-1 PREDICTION OVER TEST DATA
     print("\nPrediction on Testing Data - TIER1")
     predict_t1_test_data = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
@@ -325,8 +330,10 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, testdata, cv_o
     predict_t2_test_data = pObj(cnst.TIER2, None, predict_t1_test_data.xB1, predict_t1_test_data.yB1)
     predict_t2_test_data.thd = thd2
     predict_t2_test_data.q_sections = q_sections
+    predict_t2_test_data.predict_section_map = section_map
     predict_t2_test_data = predict_tier2(model_idx, predict_t2_test_data, fold_index)
     print("List of TPs found: ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
+    print("List of New FPs  : ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
     # RECONCILIATION OF PREDICTION RESULTS FROM TIER - 1&2
     return reconcile(predict_t1_test_data, predict_t2_test_data, cv_obj, fold_index)
 

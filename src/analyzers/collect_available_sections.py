@@ -2,25 +2,28 @@ import pefile
 import pandas as pd
 import re
 import config.constants as cnst
+import numpy as np
+from collections import OrderedDict
 
 
-def collect_sections():
-    all_sections = dict()
-    benign_sections = dict()
-    malware_sections = dict()
-    all_file = "Give Path To all.csv"  # cnst.ALL_FILE
-    df = pd.read_csv(all_file, header=None)
+def collect_sections(files, type):
+    all_sections = OrderedDict([('.header', len(files))])
+    benign_sections = OrderedDict([('.header', 0)])
+    malware_sections = OrderedDict([('.header', 0)])
+
+    # df = pd.read_csv(file, header=None)
     pattern = re.compile("^.[A-Za-z]*$")
 
-    files = df[0]
-    type = df[1]
+    # files = df[0]
+    # type = df[1]
+    print("Collecting section info for " + str(len(files)) + " files in B1 Training Dataset.")
     for i, file in enumerate(files):
-        file = file.replace("08_Dataset", "08_Dataset"+cnst.ESC+"Internal")
+        filepath = cnst.DATA_SOURCE_PATH+file[0:-4]
         print(i + 1)
         try:
-            pe = pefile.PE(file)
+            pe = pefile.PE(filepath)
             for section in pe.sections:
-                section_name = section.Name.rstrip(b'\x00').decode("utf-8")
+                section_name = section.Name.strip(b'\x00').decode("utf-8")
                 # section_name = section_name[2:-1]
                 # if re.match(r".[a-z]+", section_name):
                 #    s[section_name] += 1
@@ -39,19 +42,24 @@ def collect_sections():
                     all_sections[section_name] += 1
                 else:
                     all_sections[section_name] = 1
-            print(all_sections)
         except Exception as e:
             print("Exception occurred while parsing sections.", e)
+    print(all_sections, ">>>>>>>>>>>>>>>>>>>>>>>>>> Total # of section", len(all_sections.keys()))
+    return all_sections.keys()
 
-    with open(cnst.PROJECT_BASE_PATH+cnst.ESC+'out'+cnst.ESC+'result'+cnst.ESC+'list_of_all_sections.csv', 'w+') as f:
-        f.write(str(all_sections))
-    with open(cnst.PROJECT_BASE_PATH+cnst.ESC+'out'+cnst.ESC+'result'+cnst.ESC+'list_of_benign_sections.csv', 'w+') as f:
-        f.write(str(benign_sections))
+
+''' with open(cnst.PROJECT_BASE_PATH+cnst.ESC+'out'+cnst.ESC+'result'+cnst.ESC+'list_of_all_sections.csv', 'w+') as f:
+        for key in all_sections.keys():
+            f.write(key+",")
+    with open(cnst.PROJECT_BASE_PATH + cnst.ESC + 'out' + cnst.ESC + 'result' + cnst.ESC + 'list_of_benign_sections.csv','w+') as f:
+        for key in benign_sections.keys():
+            f.write(key + ",")
     with open(cnst.PROJECT_BASE_PATH+cnst.ESC+'out'+cnst.ESC+'result'+cnst.ESC+'list_of_malware_sections.csv', 'w+') as f:
-        f.write(str(malware_sections))
+        for key in malware_sections.keys():
+            f.write(key+",")'''
 
 
-collect_sections()
+# collect_sections(cnst.ALL_FILE)
 
 
 '''

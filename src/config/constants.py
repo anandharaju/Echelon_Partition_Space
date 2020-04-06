@@ -40,6 +40,7 @@ TIER2 = "TIER2"
 TIER2_EPOCHS = EPOCHS + 1
 TIER2_TARGET_FPR = 0
 #####################################################################################
+USE_GPU = False
 
 # CROSS VALIDATION
 CV_FOLDS = 5

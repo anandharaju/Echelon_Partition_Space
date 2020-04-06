@@ -14,6 +14,7 @@ import random
 from datetime import datetime
 from plots.auc import plot_cv_auc
 from plots.auc import cv as cv_info
+from collections import OrderedDict
 
 
 def generate_cv_folds_data(dataset_path):
@@ -70,8 +71,8 @@ def train_predict(model_idx, dataset_path=None):
 
         print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> [ CV-FOLD " + str(fold_index + 1) + "/" + str(cnst.CV_FOLDS) + " ]", "Training: " + str(train_len), "Validation: " + str(val_len), "Testing: " + str(test_len))
 
-        if fold_index < 4:
-	          continue
+        #if fold_index < 3:
+	    #    continue
         # traindatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_train_pkl.csv", header=None)
         # testdatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_test_pkl.csv", header=None)
         # mastertraindata.xdf, testdata.xdf = traindatadf.iloc[:, 0], testdatadf.iloc[:, 0]
@@ -85,12 +86,17 @@ def train_predict(model_idx, dataset_path=None):
         thd1 = [49.60, 52.50, 21.00, 53.80, 53.50][fold_index]  # thd1 = [39.60, 42.50, 11.00, 43.80, 43.50][fold_index]
         thd2 = [19.40, 31.80, 45.80, 46.67, 0.10][fold_index]
         boosting_upper_bound = [0.005994119, 0.017273573, 0.0083747255, 0.018325813, 0.0073086885][fold_index]
-        q_sections = ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq','.data','.lif','.FISHPEP','.nkh','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn','.ifc','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda','.lrdata','.heb','.rloc','.iIEiZ','/29','.reloc','.vsp','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']  # T1TPR: 99.89 T2TPR: 2.11
-        thd1, boosting_upper_bound, thd2, q_sections = train.init(model_idx, traindata, valdata, fold_index)
+        q_sections = [['.text', '.data', '.header', '.rdata', '.rsrc', '.stab', '.stabstr', 'UPX1', '/29'],
+                      ['.reloc', '.text', '.data', '.header', '.rdata', '.rsrc', '.idata', '.stab', '.stabstr', 'UPX1', '/19'],
+                      ['.reloc', '.text', '.data', '.header', '.rdata', '.rsrc', '.idata', '.pdata', '.gfids', '.tls', 'DATA', '.data_cy', '.stab', '.stabstr', '.data1', '.text1', '/4', '.xdata', '.edata', '.didat', 'UPX1', '.pr0', '/55', '/29', '/41', '.orpc', 'GFIDS', 'PAGE', '/19', '/81', '/92', '/31', '/45', '/70', '/57', 'PAGER32C', '/78', '/89', '.text/DE', '.itext', '.extjmp', '.extrel', 'PAGEPpoe', '/113', '/77', '/51', '.nv_fatb', 'data', 'CPUCAP_T', 'PAGEWArp', 'ENGINE'],
+                      ['.reloc', '.text', '.data', '.header', '.rdata', '.rsrc', '.idata', '.pdata', '.stab', '.stabstr', 'UPX1', '/29', 'PAGE', '/19', '/81', '/45'],
+                      ['.reloc', '.text', '.data', '.header', '.rdata', '.rsrc', '.idata', '.pdata', 'INIT', '.gfids', '.tls', 'DATA', '.data_cy', '.sxdata', '.stab', '.stabstr', '.data1', '_RDATA', '.text1', '/4', '.xdata', '.edata', '.didat', 'UPX1', '.pr0', '/55', '/91', '/14', '/29', '/80', '/67', '/41', '/102', '.orpc', '.00cfg', '.cdata', 'GFIDS', 'PAGE', '/19', '/81', '/92', '/31', '/45', '/70', '/57', 'PAGER32C', 'PAGER32R', '/78', '/89', '.buildid', '.text/DE', '.itext', '.didata', '.its', '.nep', '.extjmp', '.extrel', 'PAGEPpoe', '.trace', '.crthunk', '.oldntma', 'CPADinfo', 'PAGECONS', '/124', '/113', '/77', '/63', '/51', '.nv_fatb', 'data', 'text', '.nvFatBi', 'CPUCAP_T', 'PAGELK', 'PAGEWArp', 'ENGINE', '/30']]
+        section_map = OrderedDict.fromkeys(['.header', '.text', '.data', '.pdata', '.rsrc', '.reloc', '.rdata', '.xdata', '.bss', '.edata', '.idata', '.CRT', '.tls', '.didat', 'PAGE', 'INIT', 'GFIDS', '.text1', '.data1', 'data', 'code', 'imports', 'relocs', 'CODE', 'DATA', 'BSS', '.orpc', '.gfids', '.SF\x00\x18']).keys()
+        #thd1, boosting_upper_bound, thd2, q_sections, section_map = train.init(model_idx, traindata, valdata, fold_index)
 
         # TIER 1&2 Prediction over Test data
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************")
-        cv_obj = predict.init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, testdata, cv_obj, fold_index)
+        cv_obj = predict.init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, testdata, cv_obj, fold_index)
         print("**********************  PREDICTION TIER 1&2 - ENDED    ************************")
         tet = time.time() - tst
         print("\nTIME ELAPSED :", str(int(tet) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
