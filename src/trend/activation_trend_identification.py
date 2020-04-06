@@ -15,9 +15,14 @@ from .ati_args import SectionActivationDistribution
 import pandas as pd
 
 
-def find_qualified_sections(trend, common_trend, support):
+def find_qualified_sections(sd, trend, common_trend, support):
     btrend = trend.loc["BENIGN_ACTIVATION_MAGNITUDE"]
     mtrend = trend.loc["MALWARE_ACTIVATION_MAGNITUDE"]
+
+    # Averaging based on respective benign and malware population
+    btrend = btrend / sd.b1_b_truth_count
+    mtrend = mtrend / sd.b1_m_truth_count
+
     activation_magnitude_gaps = btrend - mtrend
     q_criteria_by_percentiles = np.percentile(activation_magnitude_gaps, q=cnst.PERCENTILES)
     # q_criteria = [0]
@@ -27,7 +32,7 @@ def find_qualified_sections(trend, common_trend, support):
     for q_criterion in q_criteria_by_percentiles:
         q_sections_by_q_criteria[q_criterion] = trend.columns[activation_magnitude_gaps > q_criterion]
     return q_sections_by_q_criteria
-    
+
 
 def parse_pe_pkl(file_id, file, unprocessed):
     section_bounds = []
@@ -70,15 +75,18 @@ def map_act_to_sec(ftype, fmap, sbounds, sd):
 
         for j in range(0, len(sbounds)):
             section = sbounds[j][0]
-            sd.a_section_support[section] = (sd.a_section_support[section] + 1) if section in sd.a_section_support.keys() else 1
+            sd.a_section_support[section] = (
+                        sd.a_section_support[section] + 1) if section in sd.a_section_support.keys() else 1
             if ftype == cnst.BENIGN:
-                sd.b_section_support[section] = (sd.b_section_support[section] + 1) if section in sd.b_section_support.keys() else 1
+                sd.b_section_support[section] = (
+                            sd.b_section_support[section] + 1) if section in sd.b_section_support.keys() else 1
                 if section not in sd.m_section_support.keys():
                     sd.m_section_support[section] = 0
             else:
                 if section not in sd.b_section_support.keys():
                     sd.b_section_support[section] = 0
-                sd.m_section_support[section] = (sd.m_section_support[section] + 1) if section in sd.m_section_support.keys() else 1
+                sd.m_section_support[section] = (
+                            sd.m_section_support[section] + 1) if section in sd.m_section_support.keys() else 1
 
         for current_activation_window in range(0, int(cnst.MAX_FILE_SIZE_LIMIT / cnst.CONV_STRIDE_SIZE)):
             section = None
@@ -143,7 +151,9 @@ def process_files(args):
     samplewise_feature_maps = []
     stunted_model = get_stunted_model(args)
 
-    print("FMAP MODULE Total B1 [{0}]\tGroundTruth [{1}:{2}]".format(len(args.t2_y_train), len(np.where(args.t2_y_train == cnst.BENIGN)[0]), len(np.where(args.t2_y_train == cnst.MALWARE)[0])))
+    print("FMAP MODULE Total B1 [{0}]\tGroundTruth [{1}:{2}]".format(len(args.t2_y_train),
+                                                                     len(np.where(args.t2_y_train == cnst.BENIGN)[0]),
+                                                                     len(np.where(args.t2_y_train == cnst.MALWARE)[0])))
     sd = SectionActivationDistribution()
     sd.b1_count = len(args.t2_y_train)
     sd.b1_b_truth_count = len(np.where(args.t2_y_train == cnst.BENIGN)[0])
@@ -176,8 +186,8 @@ def process_files(args):
 
     return sd, max_activation_value
 
-        # print(section_stat)
-        # print("Unprocessed file count: ", unprocessed)
+    # print(section_stat)
+    # print("Unprocessed file count: ", unprocessed)
 
     # Find activation distribution
     # raw_arr = np.array(np.squeeze(temp_feature_map_list))
@@ -240,25 +250,43 @@ def save_activation_trend(sd):
     fmaps_common_trend = pd.DataFrame()
     fmaps_section_support = pd.DataFrame()
 
-    fmaps_trend["ACTIVATION / HISTOGRAM"] = ["ALL_ACTIVATION_MAGNITUDE", "BENIGN_ACTIVATION_MAGNITUDE", "MALWARE_ACTIVATION_MAGNITUDE", "HISTOGRAM_ALL", "HISTOGRAM_BENIGN", "HISTOGRAM_MALWARE"]
-    fmaps_common_trend["COMMON"] = ["ALL_ACTIVATION_MAGNITUDE", "BENIGN_ACTIVATION_MAGNITUDE", "MALWARE_ACTIVATION_MAGNITUDE", "HISTOGRAM_ALL", "HISTOGRAM_BENIGN", "HISTOGRAM_MALWARE"]
-    fmaps_section_support["SUPPORT"] = ["PRESENCE_IN_ALL", "PRESENCE_IN_BENIGN", "PRESENCE_IN_MALWARE", "SUPPORT_IN_ALL", "SUPPORT_IN_BENIGN", "SUPPORT_IN_MALWARE"]
+    fmaps_trend["ACTIVATION / HISTOGRAM"] = ["ALL_ACTIVATION_MAGNITUDE", "BENIGN_ACTIVATION_MAGNITUDE",
+                                             "MALWARE_ACTIVATION_MAGNITUDE", "HISTOGRAM_ALL", "HISTOGRAM_BENIGN",
+                                             "HISTOGRAM_MALWARE"]
+    fmaps_common_trend["COMMON"] = ["ALL_ACTIVATION_MAGNITUDE", "BENIGN_ACTIVATION_MAGNITUDE",
+                                    "MALWARE_ACTIVATION_MAGNITUDE", "HISTOGRAM_ALL", "HISTOGRAM_BENIGN",
+                                    "HISTOGRAM_MALWARE"]
+    fmaps_section_support["SUPPORT"] = ["PRESENCE_IN_ALL", "PRESENCE_IN_BENIGN", "PRESENCE_IN_MALWARE",
+                                        "SUPPORT_IN_ALL", "SUPPORT_IN_BENIGN", "SUPPORT_IN_MALWARE"]
 
     for key in sd.a_activation_histogram.keys():
-        fmaps_trend[key] = [int(sd.a_activation_magnitude[key]) if sd.a_activation_magnitude[key] is not None else sd.a_activation_magnitude[key],
-                            int(sd.b_activation_magnitude[key]) if sd.b_activation_magnitude[key] is not None else sd.b_activation_magnitude[key],
-                            int(sd.m_activation_magnitude[key]) if sd.m_activation_magnitude[key] is not None else sd.m_activation_magnitude[key],
-                            int(sd.a_activation_histogram[key]) if sd.a_activation_histogram[key] is not None else sd.a_activation_histogram[key],
-                            int(sd.b_activation_histogram[key]) if sd.b_activation_histogram[key] is not None else sd.b_activation_histogram[key],
-                            int(sd.m_activation_histogram[key]) if sd.m_activation_histogram[key] is not None else sd.m_activation_histogram[key]]
+        fmaps_trend[key] = [int(sd.a_activation_magnitude[key]) if sd.a_activation_magnitude[key] is not None else
+                            sd.a_activation_magnitude[key],
+                            int(sd.b_activation_magnitude[key]) if sd.b_activation_magnitude[key] is not None else
+                            sd.b_activation_magnitude[key],
+                            int(sd.m_activation_magnitude[key]) if sd.m_activation_magnitude[key] is not None else
+                            sd.m_activation_magnitude[key],
+                            int(sd.a_activation_histogram[key]) if sd.a_activation_histogram[key] is not None else
+                            sd.a_activation_histogram[key],
+                            int(sd.b_activation_histogram[key]) if sd.b_activation_histogram[key] is not None else
+                            sd.b_activation_histogram[key],
+                            int(sd.m_activation_histogram[key]) if sd.m_activation_histogram[key] is not None else
+                            sd.m_activation_histogram[key]]
 
         if sd.b_activation_histogram[key] is not None and sd.m_activation_histogram[key] is not None:
-            fmaps_common_trend[key] = [int(sd.a_activation_magnitude[key]) if sd.a_activation_magnitude[key] is not None else sd.a_activation_magnitude[key],
-                                       int(sd.b_activation_magnitude[key]) if sd.b_activation_magnitude[key] is not None else sd.b_activation_magnitude[key],
-                                       int(sd.m_activation_magnitude[key]) if sd.m_activation_magnitude[key] is not None else sd.m_activation_magnitude[key],
-                                       int(sd.a_activation_histogram[key]) if sd.a_activation_histogram[key] is not None else sd.a_activation_histogram[key],
-                                       int(sd.b_activation_histogram[key]) if sd.b_activation_histogram[key] is not None else sd.b_activation_histogram[key],
-                                       int(sd.m_activation_histogram[key]) if sd.m_activation_histogram[key] is not None else sd.m_activation_histogram[key]]
+            fmaps_common_trend[key] = [
+                int(sd.a_activation_magnitude[key]) if sd.a_activation_magnitude[key] is not None else
+                sd.a_activation_magnitude[key],
+                int(sd.b_activation_magnitude[key]) if sd.b_activation_magnitude[key] is not None else
+                sd.b_activation_magnitude[key],
+                int(sd.m_activation_magnitude[key]) if sd.m_activation_magnitude[key] is not None else
+                sd.m_activation_magnitude[key],
+                int(sd.a_activation_histogram[key]) if sd.a_activation_histogram[key] is not None else
+                sd.a_activation_histogram[key],
+                int(sd.b_activation_histogram[key]) if sd.b_activation_histogram[key] is not None else
+                sd.b_activation_histogram[key],
+                int(sd.m_activation_histogram[key]) if sd.m_activation_histogram[key] is not None else
+                sd.m_activation_histogram[key]]
 
     if sd.b1_count > 0 and sd.b1_b_truth_count > 0 and sd.b1_m_truth_count > 0:
         for key in sd.a_section_support.keys():
@@ -292,14 +320,14 @@ def start_ati_process(args):
     sd, max_activation_value = process_files(args)
     # print("Final max_activation_value", max_activation_value)
     fmaps_trend, fmaps_common_trend, fmaps_section_support = save_activation_trend(sd)
-    return fmaps_trend, fmaps_common_trend, fmaps_section_support
+    return sd, fmaps_trend, fmaps_common_trend, fmaps_section_support
 
 
 def init(args):
-    trend, common_trend, support = start_ati_process(args)
+    sd, trend, common_trend, support = start_ati_process(args)
 
     # select sections for Tier-2 based on identified activation trend
-    q_sections_by_q_criteria = find_qualified_sections(trend, common_trend, support)
+    q_sections_by_q_criteria = find_qualified_sections(sd, trend, common_trend, support)
 
     # select, drop = plots.save_stats_as_plot(fmaps, qualification_criteria)
     return q_sections_by_q_criteria  # select, drop
@@ -315,7 +343,6 @@ if __name__ == '__main__':
     #    print(section)
     # print(pe.OPTIONAL_HEADER, "\n", pe.NT_HEADERS, "\n", pe.FILE_HEADER, "\n", pe.RICH_HEADER, "\n", pe.DOS_HEADER,
     # \"\n", pe.__IMAGE_DOS_HEADER_format__, "\n", pe.header, "\n", "LENGTH", len(pe.header))
-
 
 '''def display_edit_distance():
     sections = []
@@ -339,7 +366,7 @@ if __name__ == '__main__':
         print("%10s" % sections[t], "%20s" % str(malware_edit_distance[t]))
         top_sections.append(sections[t])
     return top_sections[:3]
-    
+
     def ks(cutoff):
     from scipy import stats
     keys = ['header', 'text', 'data', 'rsrc', 'pdata', 'rdata']
