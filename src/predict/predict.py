@@ -326,7 +326,7 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
     predict_t1_test_data.xM1, predict_t1_test_data.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
 
     # TIER-2 PREDICTION
-    print("Prediction on Testing Data - TIER2 [B1 data]")
+    print("Prediction on Testing Data - TIER2 [B1 data]\t\t\tSection Map Length:", len(section_map.keys()))
     predict_t2_test_data = pObj(cnst.TIER2, None, predict_t1_test_data.xB1, predict_t1_test_data.yB1)
     predict_t2_test_data.thd = thd2
     predict_t2_test_data.q_sections = q_sections

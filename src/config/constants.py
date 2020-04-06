@@ -20,9 +20,9 @@ PREDICT_VERBOSE = VERBOSE_1
 ATI_PREDICT_VERBOSE = VERBOSE_0
 
 #####################################################################################
-PROJECT_ROOT = 'Echelon_Linux'
-USE_PRETRAINED_FOR_TIER1 = True  # True:Malconv False:Echelon
-USE_PRETRAINED_FOR_TIER2 = True
+PROJECT_ROOT = 'Echelon_20k'      # Needed only for Linux
+USE_PRETRAINED_FOR_TIER1 = False  # True:Malconv False:Echelon
+USE_PRETRAINED_FOR_TIER2 = False
 PERFORM_B2_BOOSTING = True
 TEST_SET_SIZE = 0.00001
 
