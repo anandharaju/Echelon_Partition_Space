@@ -32,13 +32,13 @@ def generate_cv_folds_data(dataset_path):
     # Save them in files -- fold wise
     skf = StratifiedKFold(n_splits=cnst.CV_FOLDS, shuffle=True, random_state=cnst.RANDOM_SEED)
     for index, (master_train_indices, test_indices) in enumerate(skf.split(adata.xdf, adata.ydf)):
-        #mastertraindata.xdf, testdata.xdf = adata.xdf[master_train_indices], adata.xdf[test_indices]
-        #mastertraindata.ydf, testdata.ydf = adata.ydf[master_train_indices], adata.ydf[test_indices]
-        #mastertraindata.xdf, valdata.xdf, mastertraindata.ydf, valdata.ydf = train_test_split(mastertraindata.xdf, mastertraindata.ydf, test_size=cnst.TEST_SET_SIZE, stratify=mastertraindata.ydf) # 0.00005
+        # mastertraindata.xdf, testdata.xdf = adata.xdf[master_train_indices], adata.xdf[test_indices]
+        # mastertraindata.ydf, testdata.ydf = adata.ydf[master_train_indices], adata.ydf[test_indices]
+        # mastertraindata.xdf, valdata.xdf, mastertraindata.ydf, valdata.ydf = train_test_split(mastertraindata.xdf, mastertraindata.ydf, test_size=cnst.TEST_SET_SIZE, stratify=mastertraindata.ydf) # 0.00005
 
-        #pd.concat([mastertraindata.xdf, mastertraindata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_train_"+str(index)+"_pkl.csv", header=None, index=None)
-        #pd.concat([valdata.xdf, valdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_val_" + str(index)+ "_pkl.csv", header=None, index=None)
-        #pd.concat([testdata.xdf, testdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_test_"+str(index)+ "_pkl.csv", header=None, index=None)
+        # pd.concat([mastertraindata.xdf, mastertraindata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_train_"+str(index)+"_pkl.csv", header=None, index=None)
+        # pd.concat([valdata.xdf, valdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_val_" + str(index)+ "_pkl.csv", header=None, index=None)
+        # pd.concat([testdata.xdf, testdata.ydf], axis=1).to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_test_"+str(index)+ "_pkl.csv", header=None, index=None)
 
         train_csv = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_train_" + str(index) + "_pkl.csv", header=None)
         val_csv = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_val_" + str(index) + "_pkl.csv", header=None)
@@ -71,8 +71,8 @@ def train_predict(model_idx, dataset_path=None):
 
         print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> [ CV-FOLD " + str(fold_index + 1) + "/" + str(cnst.CV_FOLDS) + " ]", "Training: " + str(train_len), "Validation: " + str(val_len), "Testing: " + str(test_len))
 
-        #if fold_index < 3:
-	    #    continue
+        #if fold_index != 2:
+        #    continue
         # traindatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_train_pkl.csv", header=None)
         # testdatadf = pd.read_csv(cnst.PROJECT_BASE_PATH + "\\data\\master_test_pkl.csv", header=None)
         # mastertraindata.xdf, testdata.xdf = traindatadf.iloc[:, 0], testdatadf.iloc[:, 0]
@@ -83,16 +83,17 @@ def train_predict(model_idx, dataset_path=None):
         # ?????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
         # TIER 1&2 Training + ATI 24.10
-        thd1 = [49.60, 52.50, 21.00, 53.80, 53.50][fold_index]  # thd1 = [39.60, 42.50, 11.00, 43.80, 43.50][fold_index]
+        thd1 = [84.30, 97.30, 98.30, 97.10, 53.50][fold_index]  # thd1 = [39.60, 42.50, 11.00, 43.80, 43.50][fold_index]
         thd2 = [19.40, 31.80, 45.80, 46.67, 0.10][fold_index]
-        boosting_upper_bound = [0.005994119, 0.017273573, 0.0083747255, 0.018325813, 0.0073086885][fold_index]
+        boosting_upper_bound = [0.0011916743, 0.012143881, 0.000691301, 3.9929164e-05, 0.0073086885][fold_index]
         q_sections = [['.text', '.data', '.header', '.rdata', '.rsrc', '.stab', '.stabstr', 'UPX1', '/29'],
                       ['.reloc', '.text', '.data', '.header', '.rdata', '.rsrc', '.idata', '.stab', '.stabstr', 'UPX1', '/19'],
                       ['.reloc', '.text', '.data', '.header', '.rdata', '.rsrc', '.idata', '.pdata', '.gfids', '.tls', 'DATA', '.data_cy', '.stab', '.stabstr', '.data1', '.text1', '/4', '.xdata', '.edata', '.didat', 'UPX1', '.pr0', '/55', '/29', '/41', '.orpc', 'GFIDS', 'PAGE', '/19', '/81', '/92', '/31', '/45', '/70', '/57', 'PAGER32C', '/78', '/89', '.text/DE', '.itext', '.extjmp', '.extrel', 'PAGEPpoe', '/113', '/77', '/51', '.nv_fatb', 'data', 'CPUCAP_T', 'PAGEWArp', 'ENGINE'],
                       ['.reloc', '.text', '.data', '.header', '.rdata', '.rsrc', '.idata', '.pdata', '.stab', '.stabstr', 'UPX1', '/29', 'PAGE', '/19', '/81', '/45'],
                       ['.reloc', '.text', '.data', '.header', '.rdata', '.rsrc', '.idata', '.pdata', 'INIT', '.gfids', '.tls', 'DATA', '.data_cy', '.sxdata', '.stab', '.stabstr', '.data1', '_RDATA', '.text1', '/4', '.xdata', '.edata', '.didat', 'UPX1', '.pr0', '/55', '/91', '/14', '/29', '/80', '/67', '/41', '/102', '.orpc', '.00cfg', '.cdata', 'GFIDS', 'PAGE', '/19', '/81', '/92', '/31', '/45', '/70', '/57', 'PAGER32C', 'PAGER32R', '/78', '/89', '.buildid', '.text/DE', '.itext', '.didata', '.its', '.nep', '.extjmp', '.extrel', 'PAGEPpoe', '.trace', '.crthunk', '.oldntma', 'CPADinfo', 'PAGECONS', '/124', '/113', '/77', '/63', '/51', '.nv_fatb', 'data', 'text', '.nvFatBi', 'CPUCAP_T', 'PAGELK', 'PAGEWArp', 'ENGINE', '/30']]
         section_map = OrderedDict.fromkeys(['.header', '.text', '.data', '.pdata', '.rsrc', '.reloc', '.rdata', '.xdata', '.bss', '.edata', '.idata', '.CRT', '.tls', '.didat', 'PAGE', 'INIT', 'GFIDS', '.text1', '.data1', 'data', 'code', 'imports', 'relocs', 'CODE', 'DATA', 'BSS', '.orpc', '.gfids', '.SF\x00\x18']).keys()
-        #thd1, boosting_upper_bound, thd2, q_sections, section_map = train.init(model_idx, traindata, valdata, fold_index)
+        #thd1, boosting_upper_bound, 
+        _, _, thd2, q_sections, section_map = train.init(model_idx, traindata, valdata, fold_index)
 
         # TIER 1&2 Prediction over Test data
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************")
@@ -102,11 +103,12 @@ def train_predict(model_idx, dataset_path=None):
         print("\nTIME ELAPSED :", str(int(tet) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
         # return
 
-    cvdf = pd.DataFrame([cv_obj.t1_mean_fpr_auc, cv_obj.t1_mean_tpr_auc, cv_obj.recon_mean_fpr_auc, cv_obj.recon_mean_tpr_auc])
-    scoredf = pd.DataFrame([np.mean(cv_obj.t1_mean_auc_score_restricted), np.mean(cv_obj.t1_mean_auc_score), np.mean(cv_obj.recon_mean_auc_score_restricted), np.mean(cv_obj.recon_mean_auc_score)])
-    cvdf.to_csv(cnst.PROJECT_BASE_PATH+cnst.ESC+"out"+cnst.ESC+"result"+cnst.ESC+"mean_cv.csv", index=False, header=None)
-    scoredf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC+"out"+cnst.ESC+"result"+cnst.ESC+"score_cv.csv", index=False, header=None)
-    plot_cv_auc(cv_obj)
+        if cv_obj is not None:
+            cvdf = pd.DataFrame([cv_obj.t1_mean_fpr_auc, cv_obj.t1_mean_tpr_auc, cv_obj.recon_mean_fpr_auc, cv_obj.recon_mean_tpr_auc])
+            scoredf = pd.DataFrame([np.mean(cv_obj.t1_mean_auc_score_restricted), np.mean(cv_obj.t1_mean_auc_score), np.mean(cv_obj.recon_mean_auc_score_restricted), np.mean(cv_obj.recon_mean_auc_score)])
+            cvdf.to_csv(cnst.PROJECT_BASE_PATH+cnst.ESC+"out"+cnst.ESC+"result"+cnst.ESC+"mean_cv.csv", index=False, header=None)
+            scoredf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC+"out"+cnst.ESC+"result"+cnst.ESC+"score_cv.csv", index=False, header=None)
+            # plot_cv_auc(cv_obj)
 
         # predict.display_probability_chart(y_tier1, pred_tier1, tier1_thd, "TRAINING_TIER1_PROB_PLOT_" + str(fold + 1))
         # predict.display_probability_chart(y_recon, pred_recon, tier2_thd, "TRAINING_TIER2_PROB_PLOT_" + str(fold + 1))

@@ -224,8 +224,7 @@ def init(model_idx, traindata, valdata, fold_index):
     t_args.t1_model_base = get_model1(t_args)
 
     # ~~~~~~~~~~~~~~~~~~~
-    q_sections_by_q_criteria = {0: ['.header', '.rsrc', '.text', '.data', '.rdata', '.reloc', '.pdata', '.idata', '.tls', '.bss', '.edata', '.gfids']}  # , '/4', 'INIT', '.CRT'
-    # q_sections_by_q_criteria = {0: ['SUPPORT','','/41','.petite','BSS','bero^fr','.didata','imports','.clam01','.adata','.flat','.code','.data2','.wtq','.data','.lif','.FISHPEP','.nkh','.vmp0','.vc++','.MPRESS2','DATA','.textbss','.rmnet','.wixburn','.mjg','.trace','code','.RLPack','.arch','.imports','.clam03','.bT','.link','.text1','.spm','cji8','D','data','.rodata','.SF','.dtc','.aspack','.text','.zero','.sdata','relocs','.rrdata','.clam04','.dtd','.RGvaB','.MPRESS1','.tqn','.ifc','.phx','kkrunchy','.data5','/67','TYSGDGYS','.rsrc','.ydata','.text','.header','.','.sxdata','.itext','Shared','.clam02','.version','UPX2','.bGPSwOt','packerBY','.packed','.vmp1','EODE','.cdata','.rdata','.gda','.lrdata','.heb','.rloc','.iIEiZ','/29','.reloc','.vsp','/55','.crt0','.tc','petite','reloc','.data','.iPRMaL','.NewSec','.imdata','.res']}
+    q_sections_by_q_criteria = {0: ['.header', '.rsrc', '.text', '.data', '.rdata', '.reloc', '.pdata', '.idata', '.tls', '.bss', '.edata', '.gfids']}  
     if not cnst.SKIP_TIER1_TRAINING:
         train_tier1(t_args)
     # ~~~~~~~~~~~~~~~~~~~
@@ -248,7 +247,7 @@ def init(model_idx, traindata, valdata, fold_index):
         q_sections_by_q_criteria = ati.init(t_args) if t_args.ati else None
 
     t_args.train_section_map = collect_sections(t_args.t2_x_train, t_args.t2_y_train)
-    print("Train section map:\n", t_args.train_section_map)
+    # print("Train section map:\n", t_args.train_section_map)
 
     print("************************ TIER 2 TRAINING - STARTED ****************************       # Samples:", len(t_args.t2_x_train))
     # Need to decide the TRAIN:VAL ratio for tier2
@@ -258,24 +257,28 @@ def init(model_idx, traindata, valdata, fold_index):
 
     # Iterate through different q_criterion to find the best suitable sections for training TIER-2
     # Higher the training TPR on B1, more suitable the set of sections are - for use in Tier-2
-    predict_t2_train_data = pObj(cnst.TIER2, cnst.TIER2_TARGET_FPR, t_args.t2_x_train, t_args.t2_y_train)
+    #predict_t2_train_data = pObj(cnst.TIER2, cnst.TIER2_TARGET_FPR, t_args.t2_x_train, t_args.t2_y_train)
+    t2_fpr = cnst.OVERALL_TARGET_FPR - predict_t1_train_data.fpr 
+    t2_fpr = t2_fpr if 0 < t2_fpr < 1 else cnst.TIER2_TARGET_FPR
+    predict_t2_train_data = pObj(cnst.TIER2, t2_fpr, t_args.t2_x_train, t_args.t2_y_train)
 
-    thd2 = None
+    thd2 = 0
     max_b1_tpr = 0
     q_sections_selected = None
     q_criterion_selected = None
     best_t2_model = None
     predict_args = DefaultPredictArguments()
-
+    print(q_sections_by_q_criteria.keys())
     for q_criterion in q_sections_by_q_criteria:
-        print("Checking Q_Criterion: {:6.2f}".format(q_criterion), q_sections_by_q_criteria[q_criterion])
+        
+        print("\n", q_sections_by_q_criteria.keys(), "\nChecking Q_Criterion: {:6.2f}".format(q_criterion), q_sections_by_q_criteria[q_criterion])
         # print("************************ Q_Criterion ****************************", q_criterion)
         t_args.q_sections = q_sections_by_q_criteria[q_criterion]
         predict_t2_train_data.q_sections = q_sections_by_q_criteria[q_criterion]
         predict_t2_train_data.predict_section_map = t_args.train_section_map
 
         # TIER-2 TRAINING & PREDICTION OVER B1 DATA for current set of q_sections
-        # Retrieve TPR at FPR=0
+        # Retrieve TPR at FPR=0 or relax till 1%
         if not cnst.SKIP_TIER2_TRAINING:
             train_tier2(t_args)
 
@@ -285,8 +288,7 @@ def init(model_idx, traindata, valdata, fold_index):
 
         print("FPR: {:6.2f}".format(predict_t2_train_data.fpr), "TPR: {:6.2f}".format(predict_t2_train_data.tpr), "\tTHD2: {:6.2f}".format(predict_t2_train_data.thd))
 
-        # if predict_t2_train_data.fpr == cnst.TIER2_TARGET_FPR and predict_t2_train_data.tpr >= max_b1_tpr:
-        if predict_t2_train_data.tpr >= max_b1_tpr:
+        if predict_t2_train_data.fpr == cnst.TIER2_TARGET_FPR and predict_t2_train_data.tpr >= max_b1_tpr:  # if predict_t2_train_data.tpr >= max_b1_tpr:
             max_b1_tpr = predict_t2_train_data.tpr
             q_criterion_selected = q_criterion
             best_t2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
@@ -299,8 +301,10 @@ def init(model_idx, traindata, valdata, fold_index):
     # Save the best model found
     try:
         best_t2_model.save(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
+        for section in q_sections_selected:
+            print(section)
     except Exception as e:
-        print("Saving of Best Model Failed", str(e))
+        print("Best Model not available to save - ", str(e))
     # save_model(model=best_t2_model, filepath=predict_args.model_path + cnst.TIER2_MODELS[model_idx], save_weights_only=False, overwrite=True)
 
     # ********* REDUNDANT
@@ -312,8 +316,8 @@ def init(model_idx, traindata, valdata, fold_index):
     # predict_t2_train_data_final = predict.predict_tier2(model_idx, predict_t2_train_data_final)
     # print("Final TIER-2 Threshold - ", predict_t2_train_data_final.thd)
     print("************************ TIER 2 TRAINING - ENDED   ****************************")
-    # return None, None, thd2, None
-    return predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
+    return None, None, thd2, q_sections_selected, t_args.train_section_map
+    # return predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
 
 
 if __name__ == '__main__':

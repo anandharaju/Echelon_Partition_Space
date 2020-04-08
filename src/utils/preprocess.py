@@ -45,6 +45,9 @@ def preprocess_by_section(file_list, max_len, sections, section_map):
     '''
     Return processed data (ndarray) and original section length (list)
     '''
+    if sections is None:
+        print("No sections supplied to process. Check if Q-criterion based selection completed successfully.")
+
     corpus = []
     section_byte_map = OrderedDict.fromkeys(section_map, value=0)
     for fn in file_list:
@@ -57,29 +60,32 @@ def preprocess_by_section(file_list, max_len, sections, section_map):
                 fjson = pickle.load(f)
                 keys = fjson["section_info"].keys()
 
-                # Update byte map with sections that are present in current file
-                for key in keys:
-                    if key in section_map:
-                        section_byte_map[key] = 1
-                    else:
-                        print("Unknown Section in B1 samples:", key)
+                try:
+                    # Update byte map with sections that are present in current file
+                    for key in keys:
+                        if key in section_map:
+                            section_byte_map[key] = 1
+                        else:
+                            print("Unknown Section in B1 samples:", key)
+                            
+                    byte_map = []
+                    byte_map_input = section_byte_map.values()  # ordered dict preserves the order of byte map
+                    for x in byte_map_input:
+                        byte_map.append(x)
+                        
+                    combined = []
+                    for section in sections:
+                        if section in keys:
+                            combined = np.concatenate([combined, fjson["section_info"][section]["section_data"]])
+                            combined = np.concatenate([combined, np.zeros(cnst.CONV_WINDOW_SIZE)])
 
-                byte_map = []
-                byte_map_input = section_byte_map.values()  # ordered dict preserves the order of byte map
-                for input in byte_map_input:
-                    byte_map.append(input)
+                    combined = np.concatenate([combined, byte_map])
+                    corpus.append(combined)
+                    if len(combined) > max_len:
+                        print("[CAUTION: LOSS_OF_DATA] Sections + Section Byte Map : exceeded max sample length by "+str(len(combined)-max_len)+" bytes")
 
-                combined = []
-                for section in sections:
-                    if section in keys:
-                        combined = np.concatenate([combined, fjson["section_info"][section]["section_data"]])
-                        combined = np.concatenate([combined, np.zeros(cnst.CONV_WINDOW_SIZE)])
-
-                combined = np.concatenate([combined, byte_map])
-                corpus.append(combined)
-                if len(combined) > max_len:
-                    print("Sections + Section Byte Map : exceeded max sample length by "+str(len(combined)-max_len)+" bytes")
-            # corpus.append(parse_pe_section_data(fn, section))
+                except Exception as e:
+                    print("Module: process_by_section. Error:", str(e))
 
     corpus = [[byte for byte in doc] for doc in corpus]
     len_list = [len(doc) for doc in corpus]

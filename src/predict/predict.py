@@ -231,17 +231,23 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
           "\tTNs:", np.sum(np.all([pt1.ytrue.ravel() == cnst.BENIGN, pt1.ypred.ravel() == cnst.BENIGN], axis=0)),
           "\tFNs:", np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.BENIGN], axis=0)))
 
+    scaled_pt1_yprobM1 = (pt1.yprobM1 - np.min(pt1.yprobM1)) / (np.max(pt1.yprobM1) - np.min(pt1.yprobM1))
+    scaled_pt1_boosted_yprobB2 = (pt1.boosted_yprobB2 - np.min(pt1.boosted_yprobB2)) / (np.max(pt1.boosted_yprobB2) - np.min(pt1.boosted_yprobB2))
+    scaled_pt2_yprob = (pt2.yprob - np.min(pt2.yprob)) / (np.max(pt2.yprob) - np.min(pt2.yprob))
+
     if cnst.PERFORM_B2_BOOSTING:
         print("                       Boosted:"+str(np.shape(pt1.boosted_xB2)[0]), "\tRemaining B1:"+str(np.shape(pt2.xtrue)[0]))
         xtruereconciled = np.concatenate((pt1.xM1, pt1.boosted_xB2, pt2.xtrue))  # pt2.xtrue contains xB1
         ytruereconciled = np.concatenate((pt1.yM1, pt1.boosted_yB2, pt2.ytrue))
         ypredreconciled = np.concatenate((pt1.ypredM1, pt1.boosted_ypredB2, pt2.ypred))
-        yprobreconciled = np.concatenate((pt1.yprobM1, pt1.boosted_yprobB2, pt2.yprob))
+        # yprobreconciled = np.concatenate((pt1.yprobM1, pt1.boosted_yprobB2, pt2.yprob))
+        yprobreconciled = np.concatenate((scaled_pt1_yprobM1, scaled_pt1_boosted_yprobB2, scaled_pt2_yprob))
     else:
         xtruereconciled = np.concatenate((pt1.xM1, pt2.xtrue))  # pt2.xtrue contains xB1
         ytruereconciled = np.concatenate((pt1.yM1, pt2.ytrue))
         ypredreconciled = np.concatenate((pt1.ypredM1, pt2.ypred))
-        yprobreconciled = np.concatenate((pt1.yprobM1, pt2.yprob))
+        # yprobreconciled = np.concatenate((pt1.yprobM1, pt2.yprob))
+        yprobreconciled = np.concatenate((scaled_pt1_yprobM1, scaled_pt2_yprob))
 
     print("AFTER RECONCILIATION :", "[M1+B1] => [", "M1+(M2+B2)", "+B2_Boosted" if cnst.PERFORM_B2_BOOSTING else "", "]  =", np.shape(xtruereconciled)[0],
           "New TPs found: [M2] =>", np.sum(np.all([pt2.ytrue.ravel() == cnst.MALWARE, pt2.ypred.ravel() == cnst.MALWARE], axis=0)),
@@ -326,16 +332,24 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
     predict_t1_test_data.xM1, predict_t1_test_data.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
 
     # TIER-2 PREDICTION
-    print("Prediction on Testing Data - TIER2 [B1 data]\t\t\tSection Map Length:", len(section_map.keys()))
-    predict_t2_test_data = pObj(cnst.TIER2, None, predict_t1_test_data.xB1, predict_t1_test_data.yB1)
-    predict_t2_test_data.thd = thd2
-    predict_t2_test_data.q_sections = q_sections
-    predict_t2_test_data.predict_section_map = section_map
-    predict_t2_test_data = predict_tier2(model_idx, predict_t2_test_data, fold_index)
-    print("List of TPs found: ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
-    print("List of New FPs  : ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
-    # RECONCILIATION OF PREDICTION RESULTS FROM TIER - 1&2
-    return reconcile(predict_t1_test_data, predict_t2_test_data, cv_obj, fold_index)
+    if thd2 is not None:
+        print("Prediction on Testing Data - TIER2 [B1 data]\t\t\tSection Map Length:", len(section_map))
+        predict_t2_test_data = pObj(cnst.TIER2, None, predict_t1_test_data.xB1, predict_t1_test_data.yB1)
+        predict_t2_test_data.thd = thd2
+        predict_t2_test_data.q_sections = q_sections
+        predict_t2_test_data.predict_section_map = section_map
+        predict_t2_test_data = predict_tier2(model_idx, predict_t2_test_data, fold_index)
+        print("List of TPs found: ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
+        print("List of New FPs  : ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
+    
+        # RECONCILIATION OF PREDICTION RESULTS FROM TIER - 1&2
+        still_benign_indices = np.where(np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.BENIGN], axis=0))[0]
+        predict_t2_test_data.yprob[still_benign_indices] = predict_t1_test_data.yprobB1[still_benign_indices]  # Assign Tier-1 probabilities for samples that are still benign to avoid AUC conflict
+
+        return reconcile(predict_t1_test_data, predict_t2_test_data, cv_obj, fold_index)
+    else:
+        print("Skipping Tier-2 prediction --- Reconciliation --- Not adding fold entry to CV AUC")
+        return None
 
 
 if __name__ == '__main__':

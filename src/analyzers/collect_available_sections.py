@@ -19,7 +19,7 @@ def collect_sections(files, type):
     print("Collecting section info for " + str(len(files)) + " files in B1 Training Dataset.")
     for i, file in enumerate(files):
         filepath = cnst.DATA_SOURCE_PATH+file[0:-4]
-        print(i + 1)
+        # print(i + 1)
         try:
             pe = pefile.PE(filepath)
             for section in pe.sections:
@@ -44,6 +44,8 @@ def collect_sections(files, type):
                     all_sections[section_name] = 1
         except Exception as e:
             print("Exception occurred while parsing sections.", e)
+    for key in all_sections.keys():
+        print(key, "\t\t\t\t", all_sections[key])
     print(all_sections, ">>>>>>>>>>>>>>>>>>>>>>>>>> Total # of section", len(all_sections.keys()))
     return all_sections.keys()
 

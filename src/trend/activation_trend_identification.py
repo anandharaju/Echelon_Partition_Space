@@ -23,7 +23,7 @@ def find_qualified_sections(sd, trend, common_trend, support):
     btrend = btrend / sd.b1_b_truth_count
     mtrend = mtrend / sd.b1_m_truth_count
 
-    activation_magnitude_gaps = btrend - mtrend
+    activation_magnitude_gaps = mtrend - btrend
     q_criteria_by_percentiles = np.percentile(activation_magnitude_gaps, q=cnst.PERCENTILES)
     # q_criteria = [0]
     # q_criteria = np.append([0], q_criteria)
@@ -315,7 +315,7 @@ def save_activation_trend(sd):
 
 
 def start_ati_process(args):
-    print("\nATI - PROCESSING BENIGN AND MALWARE FILES\t\t", "B1 FILES COUNT:", np.shape(args.t2_y_train))
+    print("\nATI - PROCESSING BENIGN AND MALWARE FILES\t\t", "B1 FILES COUNT:", np.shape(args.t2_y_train)[0])
     print("-----------------------------------------")
     sd, max_activation_value = process_files(args)
     # print("Final max_activation_value", max_activation_value)
