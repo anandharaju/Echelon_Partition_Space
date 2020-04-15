@@ -23,7 +23,10 @@ def find_qualified_sections(sd, trend, common_trend, support):
     btrend = btrend / sd.b1_b_truth_count
     mtrend = mtrend / sd.b1_m_truth_count
 
-    activation_magnitude_gaps = mtrend - btrend
+    btrend[btrend == 0] = 1
+    mtrend[mtrend == 0] = 1
+
+    activation_magnitude_gaps = mtrend / btrend
     q_criteria_by_percentiles = np.percentile(activation_magnitude_gaps, q=cnst.PERCENTILES)
     # q_criteria = [0]
     # q_criteria = np.append([0], q_criteria)
@@ -36,22 +39,29 @@ def find_qualified_sections(sd, trend, common_trend, support):
 
 def parse_pe_pkl(file_id, file, unprocessed):
     section_bounds = []
+    file_byte_size = None
+    max_section_end_offset = 0
     try:
         with open(file, 'rb') as pkl:
             fjson = pickle.load(pkl)
+            file_byte_size = fjson['size_byte']
             pkl_sections = fjson["section_info"].keys()
             for pkl_section in pkl_sections:
                 section_bounds.append(
                     (pkl_section,
                      fjson["section_info"][pkl_section]["section_bounds"]["start_offset"],
                      fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]))
+                if fjson["section_info"][pkl_section]["section_bounds"]["end_offset"] > max_section_end_offset:
+                    max_section_end_offset = fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]
 
             # Placeholder section "padding" - for activations in padding region
+            if max_section_end_offset < fjson["size_byte"]:
+                section_bounds.append((cnst.TAIL, max_section_end_offset + 1, fjson["size_byte"]))
             section_bounds.append((cnst.PADDING, fjson["size_byte"] + 1, cnst.MAX_FILE_SIZE_LIMIT))
     except Exception as e:
         print("parse failed . . . [FILE ID - ", file_id, "]  [", file, "] ", e)
         unprocessed += 1
-    return section_bounds, unprocessed
+    return section_bounds, unprocessed, file_byte_size
 
 
 def get_feature_map(smodel, file):
@@ -88,10 +98,16 @@ def map_act_to_sec(ftype, fmap, sbounds, sd):
                 sd.m_section_support[section] = (
                             sd.m_section_support[section] + 1) if section in sd.m_section_support.keys() else 1
 
-        for current_activation_window in range(0, int(cnst.MAX_FILE_SIZE_LIMIT / cnst.CONV_STRIDE_SIZE)):
+        for current_activation_window in range(0, len(fmap)):  # range(0, int(cnst.MAX_FILE_SIZE_LIMIT / cnst.CONV_STRIDE_SIZE)):
             section = None
             offset = idx[current_activation_window] * 500
             act_val = fmap[idx[current_activation_window]]
+
+            ######################################################################################
+            # Change for Pooling layer based Activation trend - Only Max activation is traced back
+            if act_val == 0:
+                continue
+            ######################################################################################
             for j in range(0, len(sbounds)):
                 cur_section = sbounds[j]
                 if cur_section[1] <= offset <= cur_section[2]:
@@ -168,21 +184,30 @@ def process_files(args):
             print(file, " does not exist. Skipping . . .")
             unprocessed += 1
             continue
-        section_bounds, unprocessed = parse_pe_pkl(i, cnst.DATA_SOURCE_PATH + file, unprocessed)
+        section_bounds, unprocessed, fsize = parse_pe_pkl(i, cnst.DATA_SOURCE_PATH + file, unprocessed)
         raw_feature_map = get_feature_map(stunted_model, file)
         # if len(np.shape(raw_feature_map)) == 1:
         #    feature_map = raw_feature_map.ravel()
         # else:
-        feature_map = raw_feature_map.sum(axis=1).ravel()
-        # feature_map_histogram(feature_map, prediction)
-        try:
-            if max_activation_value < feature_map.max():
-                max_activation_value = feature_map.max()
-                # print("max_activation_value: ", max_activation_value)
-        except Exception as e:
-            print("$$$$$$$$")  # max_activation_value, raw_feature_map.ravel().max(), raw_feature_map.ravel().size)
-        samplewise_feature_maps.append(feature_map)
-        sd = map_act_to_sec(file_type, feature_map, section_bounds, sd)
+
+        if cnst.USE_POOLING_LAYER:
+            try:
+                pooled_max_2D_map = np.amax(raw_feature_map, axis=0)
+                pooled_max_1D_map = np.sum(raw_feature_map == np.amax(raw_feature_map, axis=0), axis=1)[:np.min([cnst.MAX_FILE_CONVOLUTED_SIZE,int(fsize/cnst.CONV_STRIDE_SIZE)+2])]
+                sd = map_act_to_sec(file_type, pooled_max_1D_map, section_bounds, sd)
+            except Exception as e:
+                print("$$$$$$$$", str(e))  # max_activation_value, raw_feature_map.ravel().size)
+        else:
+            feature_map = raw_feature_map.sum(axis=1).ravel()
+            # feature_map_histogram(feature_map, prediction)
+            try:
+                if max_activation_value < feature_map.max():
+                    max_activation_value = feature_map.max()
+                    # print("max_activation_value: ", max_activation_value)
+            except Exception as e:
+                print("$$$$$$$$")  # max_activation_value, raw_feature_map.ravel().max(), raw_feature_map.ravel().size)
+            samplewise_feature_maps.append(feature_map)
+            sd = map_act_to_sec(file_type, feature_map, section_bounds, sd)
 
     return sd, max_activation_value
 

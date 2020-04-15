@@ -79,6 +79,16 @@ def preprocess_by_section(file_list, max_len, sections, section_map):
                             combined = np.concatenate([combined, fjson["section_info"][section]["section_data"]])
                             combined = np.concatenate([combined, np.zeros(cnst.CONV_WINDOW_SIZE)])
 
+                    if cnst.TAIL in sections:
+                        fsize = len(fjson["whole_bytes"])
+                        sections_end = 0
+                        for key in keys:
+                            if fjson["section_info"][key]['section_bounds']["end_offset"] > sections_end:
+                                sections_end = fjson["section_info"][key]['section_bounds']["end_offset"]
+                        if sections_end < fsize - 1:
+                            combined = np.concatenate([combined, fjson["whole_bytes"][sections_end:fsize]])
+                            combined = np.concatenate([combined, np.zeros(cnst.CONV_WINDOW_SIZE)])
+
                     combined = np.concatenate([combined, byte_map])
                     corpus.append(combined)
                     if len(combined) > max_len:

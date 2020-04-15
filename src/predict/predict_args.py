@@ -57,3 +57,18 @@ class DefaultPredictArguments:
     save_path = cnst.SAVE_PATH
     model_path = cnst.MODEL_PATH
 
+
+class QStats:
+    def __init__(self, p, q, s):
+        self.percentiles = p
+        self.qcriteria = q
+        self.sections = s
+        thds = []
+        tprs = []
+        fprs = []
+    percentiles = None
+    qcriteria = None
+    sections = None
+    thds = []
+    tprs = []
+    fprs = []

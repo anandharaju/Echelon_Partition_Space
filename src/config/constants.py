@@ -11,7 +11,7 @@ TIER2_PRETRAINED_MODEL = "ember_malconv.h5"
 BENIGN = 0
 MALWARE = 1
 T1_TRAIN_BATCH_SIZE = 64
-T2_TRAIN_BATCH_SIZE = 16
+T2_TRAIN_BATCH_SIZE = 32
 PREDICT_BATCH_SIZE = 100
 
 T1_VERBOSE = VERBOSE_0
@@ -26,7 +26,7 @@ PROJECT_ROOT = 'Echelon_20k'      # Needed only for Linux
 USE_PRETRAINED_FOR_TIER1 = False  # True:Malconv False:Echelon
 USE_PRETRAINED_FOR_TIER2 = True
 PERFORM_B2_BOOSTING = True
-TEST_SET_SIZE = 0.0001
+VAL_SET_SIZE = 0.2
 
 EPOCHS = 1
 # TIER-1
@@ -39,10 +39,10 @@ SKIP_ATI_PROCESSING = False
 
 # TIER-2
 TIER2 = "TIER2"
-TIER2_EPOCHS = EPOCHS + 1
+TIER2_EPOCHS = EPOCHS
 TIER2_TARGET_FPR = 0
 
-OVERALL_TARGET_FPR = 1
+OVERALL_TARGET_FPR = 0.1
 #####################################################################################
 
 # CROSS VALIDATION
@@ -51,10 +51,13 @@ INITIAL_FOLD = 0
 RANDOMIZE = False  # Set Random seed for True
 
 #  DATA SOURCE
+MAX_SECT_BYTE_MAP_SIZE = 2000
 MAX_FILE_SIZE_LIMIT = 2**20  # 204800
 MAX_FILE_COUNT_LIMIT = None
 CONV_WINDOW_SIZE = 500
 CONV_STRIDE_SIZE = 500
+MAX_FILE_CONVOLUTED_SIZE = int(MAX_FILE_SIZE_LIMIT / CONV_STRIDE_SIZE)
+USE_POOLING_LAYER = True
 PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/' + PROJECT_ROOT if LINUX_ENV else 'D:\\03_GitWorks\\Huawei_Echelon_Reboot'
 DATA_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/pickle_files/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\'
 ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'balanced_pkl.csv'  # small_pkl_1_1.csv'
@@ -84,12 +87,13 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+PERCENTILES = [80, 85, 90, 95]  # [10, 20, 30, 40, 50, 60, 70, 80, 90]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'
 SECTION_SUPPORT = PROJECT_BASE_PATH + ESC + "out" + ESC + "result" + ESC + "section_support_by_samples.csv"
 
+TAIL = "TAIL"
 PADDING = "PADDING"
 LEAK = "SECTIONLESS"
 

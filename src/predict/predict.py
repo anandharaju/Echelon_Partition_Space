@@ -251,6 +251,7 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
 
     print("AFTER RECONCILIATION :", "[M1+B1] => [", "M1+(M2+B2)", "+B2_Boosted" if cnst.PERFORM_B2_BOOSTING else "", "]  =", np.shape(xtruereconciled)[0],
           "New TPs found: [M2] =>", np.sum(np.all([pt2.ytrue.ravel() == cnst.MALWARE, pt2.ypred.ravel() == cnst.MALWARE], axis=0)),
+          "\tNew FPs:  =>", np.sum(np.all([pt2.ytrue.ravel() == cnst.BENIGN, pt2.ypred.ravel() == cnst.MALWARE], axis=0)),
           "\n[RECON TPs] =>", np.sum(np.all([ytruereconciled.ravel() == cnst.MALWARE, ypredreconciled.ravel() == cnst.MALWARE], axis=0)),
           "\tFPs:", np.sum(np.all([ytruereconciled.ravel() == cnst.BENIGN, ypredreconciled.ravel() == cnst.MALWARE], axis=0)),
           "\n[RECON TNs] =>", np.sum(np.all([ytruereconciled.ravel() == cnst.BENIGN, ypredreconciled.ravel() == cnst.BENIGN], axis=0)),
@@ -332,7 +333,7 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
     predict_t1_test_data.xM1, predict_t1_test_data.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
 
     # TIER-2 PREDICTION
-    if thd2 is not None:
+    if thd2 is not None and q_sections is not None:
         print("Prediction on Testing Data - TIER2 [B1 data]\t\t\tSection Map Length:", len(section_map))
         predict_t2_test_data = pObj(cnst.TIER2, None, predict_t1_test_data.xB1, predict_t1_test_data.yB1)
         predict_t2_test_data.thd = thd2
@@ -345,6 +346,9 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
         # RECONCILIATION OF PREDICTION RESULTS FROM TIER - 1&2
         still_benign_indices = np.where(np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.BENIGN], axis=0))[0]
         predict_t2_test_data.yprob[still_benign_indices] = predict_t1_test_data.yprobB1[still_benign_indices]  # Assign Tier-1 probabilities for samples that are still benign to avoid AUC conflict
+
+        new_tp_indices = np.where(np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0))[0]
+        predict_t2_test_data.yprob[new_tp_indices] = predict_t1_test_data.yprobB1[new_tp_indices] + predict_t2_test_data.yprob[new_tp_indices]
 
         return reconcile(predict_t1_test_data, predict_t2_test_data, cv_obj, fold_index)
     else:

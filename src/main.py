@@ -26,7 +26,9 @@ def main():
     # clean_files()
 
     model = 0  # model index
+    metaObj.run_setup()
     gtp.train_predict(model, cnst.ALL_FILE)
+    metaObj.run_setup()
     exit()
 
     '''cust_data = ['small_pkl_6_1.csv', 'small_pkl_7_1.csv', 'small_pkl_8_1.csv', 'small_pkl_9_1.csv', 'small_pkl_10_1.csv']
