@@ -44,8 +44,8 @@ def collect_sections(files, type):
                     all_sections[section_name] = 1
         except Exception as e:
             print("Exception occurred while parsing sections.", e)
-    for key in all_sections.keys():
-        print(key, "\t\t\t\t", all_sections[key])
+    # for key in all_sections.keys():
+    #    print(key, "\t\t\t\t", all_sections[key])
     print(all_sections, ">>>>>>>>>>>>>>>>>>>>>>>>>> Total # of section", len(all_sections.keys()))
     return all_sections.keys()
 

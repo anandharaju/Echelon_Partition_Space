@@ -230,11 +230,14 @@ def init(model_idx, traindata, valdata, fold_index):
     # ~~~~~~~~~~~~~~~~~~~
 
     # TIER-1 PREDICTION OVER TRAINING DATA [Select THD1]
-    print("Prediction over Validation data in TIER-1 to select THD1 and Boosting Bound")
+    print("*** Prediction over Validation data in TIER-1 to select THD1 and Boosting Bound")
     predict_t1_val_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, valdata.xdf.values, valdata.ydf.values)
     predict_t1_val_data = predict.predict_tier1(model_idx, predict_t1_val_data, fold_index)
 
-    print("Prediction over Training data in TIER-1 to generate B1 data for TIER-2")
+    val_b1datadf = pd.concat([pd.DataFrame(predict_t1_val_data.xB1), pd.DataFrame(predict_t1_val_data.yB1)], axis=1)
+    val_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+
+    print("\n*** Prediction over Training data in TIER-1 to generate B1 data for TIER-2 Training")
     predict_t1_train_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, traindata.xdf.values, traindata.ydf.values)
     predict_t1_train_data.thd = predict_t1_val_data.thd
     predict_t1_train_data.boosting_upper_bound = predict_t1_val_data.boosting_upper_bound
@@ -243,15 +246,17 @@ def init(model_idx, traindata, valdata, fold_index):
     train_b1datadf = pd.concat([pd.DataFrame(predict_t1_train_data.xB1), pd.DataFrame(predict_t1_train_data.yB1)], axis=1)
     train_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_"+str(fold_index)+"_pkl.csv", header=None, index=None)
 
-    print("Loading stored B1 Data")
+    print("Loading stored B1 Data from Training set to train Tier-2 model")
     train_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_"+str(fold_index)+"_pkl.csv", header=None)  # xxs.csv
     t_args.t2_x_train, t_args.t2_y_train = train_b1datadf.iloc[:, 0], train_b1datadf.iloc[:, 1]
 
     # ATI PROCESS - SELECTING QUALIFIED_SECTIONS - ### Pass B1 data
     if not cnst.SKIP_ATI_PROCESSING:
+        print("Performing ATI over B1 data of Training set")
         t_args.t2_x_train, t_args.t2_y_train = predict_t1_train_data.xB1, predict_t1_train_data.yB1
         q_sections_by_q_criteria = ati.init(t_args) if t_args.ati else None
 
+    print("Collecting section map over B1 data of Training set")
     t_args.train_section_map = collect_sections(t_args.t2_x_train, t_args.t2_y_train)
     # print("Train section map:\n", t_args.train_section_map)
 
@@ -266,8 +271,15 @@ def init(model_idx, traindata, valdata, fold_index):
     #predict_t2_train_data = pObj(cnst.TIER2, cnst.TIER2_TARGET_FPR, t_args.t2_x_train, t_args.t2_y_train)
     t2_fpr = cnst.OVERALL_TARGET_FPR - predict_t1_train_data.fpr 
     t2_fpr = t2_fpr if 0 < t2_fpr < 1 else cnst.TIER2_TARGET_FPR
+
+    t2_fpr = cnst.TIER2_TARGET_FPR
     print("Updated Tier-2 target FPR:", t2_fpr)
-    predict_t2_train_data = pObj(cnst.TIER2, t2_fpr, t_args.t2_x_train, t_args.t2_y_train)
+
+    #print("Loading stored B1 Data from Training set for Tier-2 Training")
+    #predict_t2_train_data = pObj(cnst.TIER2, t2_fpr, t_args.t2_x_train, t_args.t2_y_train)
+    print("Loading stored B1 Data from Validation set for THD2 selection")
+    val_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None)  # xxs.csv
+    predict_t2_val_data = pObj(cnst.TIER2, t2_fpr, val_b1datadf.iloc[:, 0], val_b1datadf.iloc[:, 1])
 
     thd2 = 0
     maxdiff = 0
@@ -281,45 +293,45 @@ def init(model_idx, traindata, valdata, fold_index):
     for q_criterion in q_sections_by_q_criteria:
 
         print("\n", q_sections_by_q_criteria.keys(), "\nChecking Q_Criterion: {:6.2f}".format(q_criterion), q_sections_by_q_criteria[q_criterion])
+
         # print("************************ Q_Criterion ****************************", q_criterion)
         t_args.q_sections = q_sections_by_q_criteria[q_criterion]
-        predict_t2_train_data.q_sections = q_sections_by_q_criteria[q_criterion]
-        predict_t2_train_data.predict_section_map = t_args.train_section_map
+        predict_t2_val_data.q_sections = q_sections_by_q_criteria[q_criterion]
+        predict_t2_val_data.predict_section_map = t_args.train_section_map
 
         # TIER-2 TRAINING & PREDICTION OVER B1 DATA for current set of q_sections
         # Retrieve TPR at FPR=0 or relax till 1%
         if not cnst.SKIP_TIER2_TRAINING:
             train_tier2(t_args)
 
-        print("\nPrediction on TIER-2 Training Data")
-        predict_t2_train_data.thd = None
-        predict_t2_train_data = predict.predict_tier2(model_idx, predict_t2_train_data, fold_index)
+        # predict_t2_train_data.thd = None
+        # predict_t2_train_data = predict.predict_tier2(model_idx, predict_t2_train_data, fold_index)
+        predict_t2_val_data.thd = None
+        predict_t2_val_data = predict.predict_tier2(model_idx, predict_t2_val_data, fold_index)
 
-        print("FPR: {:6.2f}".format(predict_t2_train_data.fpr), "TPR: {:6.2f}".format(predict_t2_train_data.tpr), "\tTHD2: {:6.2f}".format(predict_t2_train_data.thd))
+        print("FPR: {:6.2f}".format(predict_t2_val_data.fpr), "TPR: {:6.2f}".format(predict_t2_val_data.tpr), "\tTHD2: {:6.2f}".format(predict_t2_val_data.thd))
 
-        curdiff = predict_t2_train_data.tpr - predict_t2_train_data.fpr
+        curdiff = predict_t2_val_data.tpr - predict_t2_val_data.fpr
         if curdiff != 0 and curdiff > maxdiff:
             maxdiff = curdiff
 
             q_criterion_selected = q_criterion
             best_t2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
-            thd2 = predict_t2_train_data.thd
+            thd2 = predict_t2_val_data.thd
             q_sections_selected = q_sections_by_q_criteria[q_criterion]
-            print("Best Q-criterion so far . . . ", q_criterion_selected)
+            print("Best Q-criterion so far . . . ", q_criterion_selected, predict_t2_val_data.thd, predict_t2_val_data.fpr, predict_t2_val_data.tpr)
 
-        qstats.thds.append(predict_t2_train_data.thd)
-        qstats.fprs.append(predict_t2_train_data.fpr)
-        qstats.tprs.append(predict_t2_train_data.tpr)
-    # Get the sections that had maximum TPR over B1 training data as Final Qualified sections
-    print("Selected Q_Criterion:", q_criterion_selected, "Selected Q_Sections:", q_sections_selected)
+        qstats.thds.append(predict_t2_val_data.thd)
+        qstats.fprs.append(predict_t2_val_data.fpr)
+        qstats.tprs.append(predict_t2_val_data.tpr)
 
     # Save the best model found
     try:
         best_t2_model.save(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
         # save_model(model=best_t2_model, filepath=predict_args.model_path + cnst.TIER2_MODELS[model_idx],
         # save_weights_only=False, overwrite=True)
-        for section in q_sections_selected:
-            print(section)
+        # for section in q_sections_selected:
+        #    print(section)
     except Exception as e:
         print("Best Model not available to save - ", str(e))
 
@@ -327,10 +339,12 @@ def init(model_idx, traindata, valdata, fold_index):
     for i,p in enumerate(cnst.PERCENTILES):
         print(str(qstats.percentiles[i])+"\t\t"+str(len(list(qstats.sections)[i]))+"\t\t{:6.2f}\t\t{:6.2f}\t\t{:6.2f}\t\t{:6.2f}\t\t{:6.2f}".format(list(qstats.qcriteria)[i], qstats.thds[i], qstats.fprs[i], qstats.tprs[i], qstats.tprs[i]-qstats.fprs[i]))
 
+    # Get the sections that had maximum TPR and low FPR over B1 training data as Final Qualified sections
+    print("\n\tBest Q_Criterion:", q_criterion_selected, "Related Q_Sections:", q_sections_selected)
+
     print("************************ TIER 2 TRAINING - ENDED   ****************************")
-    return None, None, thd2, q_sections_selected, t_args.train_section_map
-    # return predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound,
-    # thd2, q_sections_selected, t_args.train_section_map
+    # return None, None, thd2, q_sections_selected, t_args.train_section_map
+    return predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
 
 
 if __name__ == '__main__':

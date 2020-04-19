@@ -1,5 +1,7 @@
+import os
+
 RESUME = True
-LINUX_ENV = True
+LINUX_ENV = False
 ESC = "/" if LINUX_ENV else "\\"
 # 42 :Answer to the Ultimate Question of Life, the Universe, and Everything
 # ~ The Hitchhiker's Guide to the Galaxy
@@ -11,10 +13,10 @@ TIER2_PRETRAINED_MODEL = "ember_malconv.h5"
 BENIGN = 0
 MALWARE = 1
 T1_TRAIN_BATCH_SIZE = 64
-T2_TRAIN_BATCH_SIZE = 32
-PREDICT_BATCH_SIZE = 100
+T2_TRAIN_BATCH_SIZE = 64
+PREDICT_BATCH_SIZE = 128
 
-T1_VERBOSE = VERBOSE_0
+T1_VERBOSE = VERBOSE_1
 T2_VERBOSE = VERBOSE_1
 PREDICT_VERBOSE = VERBOSE_1
 ATI_PREDICT_VERBOSE = VERBOSE_0
@@ -22,8 +24,8 @@ ATI_PREDICT_VERBOSE = VERBOSE_0
 #####################################################################################
 USE_GPU = True
 
-PROJECT_ROOT = 'Echelon_20k'      # Needed only for Linux
-USE_PRETRAINED_FOR_TIER1 = False  # True:Malconv False:Echelon
+PROJECT_ROOT = os.getcwdb().decode("utf-8").split("/")[-2] if LINUX_ENV else os.getcwdb().decode("utf-8").split("\\")[-2]
+USE_PRETRAINED_FOR_TIER1 = True  # True:Malconv False:Echelon
 USE_PRETRAINED_FOR_TIER2 = True
 PERFORM_B2_BOOSTING = True
 VAL_SET_SIZE = 0.2
@@ -34,7 +36,7 @@ TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
 TIER1_TARGET_FPR = 0.1
 SKIP_TIER1_TRAINING = True
-SKIP_TIER2_TRAINING = False
+SKIP_TIER2_TRAINING = True
 SKIP_ATI_PROCESSING = False
 
 # TIER-2
@@ -58,9 +60,9 @@ CONV_WINDOW_SIZE = 500
 CONV_STRIDE_SIZE = 500
 MAX_FILE_CONVOLUTED_SIZE = int(MAX_FILE_SIZE_LIMIT / CONV_STRIDE_SIZE)
 USE_POOLING_LAYER = True
-PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/' + PROJECT_ROOT if LINUX_ENV else 'D:\\03_GitWorks\\Huawei_Echelon_Reboot'
+PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/' + PROJECT_ROOT if LINUX_ENV else 'D:\\03_GitWorks\\'+PROJECT_ROOT
 DATA_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/pickle_files/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\'
-ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'balanced_pkl.csv'  # small_pkl_1_1.csv'
+ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'ds1_20.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
 BENIGN_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_benign_pkl.csv'
 MALWARE_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_malware_pkl.csv'
 TRAINING_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'training.csv'
@@ -87,7 +89,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [80, 85, 90, 95]  # [10, 20, 30, 40, 50, 60, 70, 80, 90]
+PERCENTILES = [95, 97, 98, 99]  # [10, 20, 30, 40, 50, 60, 70, 80, 90]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'

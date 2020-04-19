@@ -65,8 +65,8 @@ def preprocess_by_section(file_list, max_len, sections, section_map):
                     for key in keys:
                         if key in section_map:
                             section_byte_map[key] = 1
-                        else:
-                            print("Unknown Section in B1 samples:", key)
+                        #else:
+                        #    print("Unknown Section in B1 samples:", key)
                             
                     byte_map = []
                     byte_map_input = section_byte_map.values()  # ordered dict preserves the order of byte map
@@ -74,10 +74,11 @@ def preprocess_by_section(file_list, max_len, sections, section_map):
                         byte_map.append(x)
                         
                     combined = []
+                    combined = np.concatenate([combined, byte_map, np.zeros(cnst.CONV_WINDOW_SIZE)])
+
                     for section in sections:
                         if section in keys:
-                            combined = np.concatenate([combined, fjson["section_info"][section]["section_data"]])
-                            combined = np.concatenate([combined, np.zeros(cnst.CONV_WINDOW_SIZE)])
+                            combined = np.concatenate([combined, fjson["section_info"][section]["section_data"], np.zeros(cnst.CONV_WINDOW_SIZE)])
 
                     if cnst.TAIL in sections:
                         fsize = len(fjson["whole_bytes"])
@@ -86,13 +87,11 @@ def preprocess_by_section(file_list, max_len, sections, section_map):
                             if fjson["section_info"][key]['section_bounds']["end_offset"] > sections_end:
                                 sections_end = fjson["section_info"][key]['section_bounds']["end_offset"]
                         if sections_end < fsize - 1:
-                            combined = np.concatenate([combined, fjson["whole_bytes"][sections_end:fsize]])
-                            combined = np.concatenate([combined, np.zeros(cnst.CONV_WINDOW_SIZE)])
+                            combined = np.concatenate([combined, fjson["whole_bytes"][sections_end:fsize], np.zeros(cnst.CONV_WINDOW_SIZE)])
 
-                    combined = np.concatenate([combined, byte_map])
                     corpus.append(combined)
                     if len(combined) > max_len:
-                        print("[CAUTION: LOSS_OF_DATA] Sections + Section Byte Map : exceeded max sample length by "+str(len(combined)-max_len)+" bytes")
+                        print("[CAUTION: LOSS_OF_DATA] Section Byte Map + Sections : exceeded max sample length by "+str(len(combined)-max_len)+" bytes")
 
                 except Exception as e:
                     print("Module: process_by_section. Error:", str(e))

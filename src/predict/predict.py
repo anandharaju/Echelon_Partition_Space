@@ -61,6 +61,7 @@ def calculate_prediction_metrics(predict_obj):
 
     predict_obj.tpr = (tp / (tp + fn)) * 100
     predict_obj.fpr = (fp / (fp + tn)) * 100
+    print(predict_obj.thd, predict_obj.tpr, predict_obj.fpr)
     predict_obj.auc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred)
     predict_obj.rauc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred, max_fpr=0.01)
 

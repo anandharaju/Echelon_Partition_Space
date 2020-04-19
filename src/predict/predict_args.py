@@ -63,9 +63,9 @@ class QStats:
         self.percentiles = p
         self.qcriteria = q
         self.sections = s
-        thds = []
-        tprs = []
-        fprs = []
+        self.thds = []
+        self.tprs = []
+        self.fprs = []
     percentiles = None
     qcriteria = None
     sections = None

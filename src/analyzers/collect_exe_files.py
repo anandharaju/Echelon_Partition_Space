@@ -1,5 +1,17 @@
-import os, shutil, errno, fnmatch
+import os, shutil
 import pefile
+import pandas as pd
+from shutil import copyfile
+import config.constants as cnst
+
+
+def group_files_by_pkl_list():
+    csv = pd.read_csv("D:\\03_GitWorks\\April15\\data\\ds1_20.csv", header=None)
+    dst_folder = "D:\\00_SFU\\ds1_20_raw\\"
+    for file in csv.iloc[:, 0]:
+        src_path = os.path.join(cnst.DATA_SOURCE_PATH, file)
+        dst_Path = os.path.join(dst_folder, file)
+        copyfile(src_path[:-4], dst_Path[:-4])
 
 
 def copy_files(src_path, dst_path, ext, max_size):
@@ -60,6 +72,8 @@ if __name__ == '__main__':
     ext = '*.exe'
     max_size = 512000  # bytes 500KB
     max_files = 110000
-    total_count, total_size = copy_files(src_path, dst_path, ext, max_size)
+    # total_count, total_size = copy_files(src_path, dst_path, ext, max_size)
+
+    group_files_by_pkl_list()
     print("\nCompleted.")
 
