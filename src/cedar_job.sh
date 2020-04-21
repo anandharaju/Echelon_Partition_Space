@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=def-wangk
-#SBATCH --time=3:00:00
-#SBATCH --job-name=TAIL_ABS_RELAX
+#SBATCH --time=8:00:00
+#SBATCH --job-name=VAL_FOLD_5
 
 #SBATCH --cpus-per-task=8
 #SBATCH --cores-per-socket=8

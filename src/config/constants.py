@@ -1,7 +1,7 @@
 import os
 
 RESUME = True
-LINUX_ENV = False
+LINUX_ENV = True
 ESC = "/" if LINUX_ENV else "\\"
 # 42 :Answer to the Ultimate Question of Life, the Universe, and Everything
 # ~ The Hitchhiker's Guide to the Galaxy
@@ -13,7 +13,7 @@ TIER2_PRETRAINED_MODEL = "ember_malconv.h5"
 BENIGN = 0
 MALWARE = 1
 T1_TRAIN_BATCH_SIZE = 64
-T2_TRAIN_BATCH_SIZE = 64
+T2_TRAIN_BATCH_SIZE = 32
 PREDICT_BATCH_SIZE = 128
 
 T1_VERBOSE = VERBOSE_1
@@ -25,7 +25,7 @@ ATI_PREDICT_VERBOSE = VERBOSE_0
 USE_GPU = True
 
 PROJECT_ROOT = os.getcwdb().decode("utf-8").split("/")[-2] if LINUX_ENV else os.getcwdb().decode("utf-8").split("\\")[-2]
-USE_PRETRAINED_FOR_TIER1 = True  # True:Malconv False:Echelon
+USE_PRETRAINED_FOR_TIER1 = False  # True:Malconv False:Echelon
 USE_PRETRAINED_FOR_TIER2 = True
 PERFORM_B2_BOOSTING = True
 VAL_SET_SIZE = 0.2
@@ -36,12 +36,12 @@ TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
 TIER1_TARGET_FPR = 0.1
 SKIP_TIER1_TRAINING = True
-SKIP_TIER2_TRAINING = True
+SKIP_TIER2_TRAINING = False
 SKIP_ATI_PROCESSING = False
 
 # TIER-2
 TIER2 = "TIER2"
-TIER2_EPOCHS = EPOCHS
+TIER2_EPOCHS = EPOCHS + 1
 TIER2_TARGET_FPR = 0
 
 OVERALL_TARGET_FPR = 0.1
@@ -89,7 +89,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [95, 97, 98, 99]  # [10, 20, 30, 40, 50, 60, 70, 80, 90]
+PERCENTILES = [75, 80, 85, 90, 92, 94, 95, 96, 97, 98, 99]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'

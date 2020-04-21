@@ -8,6 +8,7 @@ from keras.models import load_model
 from utils.filter import filter_benign_fn_files, filter_malware_fp_files
 from config import constants as cnst
 from .predict_args import DefaultPredictArguments, Predict as pObj
+import math
 
 
 def predict_byte(model, xfiles, args):
@@ -74,27 +75,19 @@ def calculate_prediction_metrics(predict_obj):
 
 
 def select_decision_threshold(predict_obj):
-    threshold = 0.0
-    selected_threshold = 100
-    temp_ypred = None
-    TPR = None
-    FPR = None
-    while threshold <= 100.0:
-        temp_ypred = (predict_obj.yprob >= (threshold / 100)).astype(int)
-        cm = metrics.confusion_matrix(predict_obj.ytrue, temp_ypred, labels=[cnst.BENIGN, cnst.MALWARE])
-        tn = cm[0][0]
-        fp = cm[0][1]
-        fn = cm[1][0]
-        tp = cm[1][1]
+    calibrated_threshold = (np.percentile(predict_obj.yprob[predict_obj.ytrue == 0], q=[100 - predict_obj.target_fpr]) * 100)[0]
+    pow = str(calibrated_threshold)[::-1].find('.')
+    calibrated_threshold = math.ceil(calibrated_threshold * 10 ** (pow - 1)) / (10 ** (pow - 1))
+    selected_threshold = calibrated_threshold if calibrated_threshold < 100.0 else 100.0
 
-        TPR = (tp / (tp + fn)) * 100
-        FPR = (fp / (fp + tn)) * 100
-        if FPR <= predict_obj.target_fpr:
-            selected_threshold = threshold
-            # print("Selected Threshold: {:6.2f}".format(threshold), "TPR: {:6.2f}".format(TPR), "\tFPR: {:6.2f}".format(FPR))
-            break
-        else:
-            threshold += 0.1
+    temp_ypred = (predict_obj.yprob >= (selected_threshold / 100)).astype(int)
+    cm = metrics.confusion_matrix(predict_obj.ytrue, temp_ypred, labels=[cnst.BENIGN, cnst.MALWARE])
+    tn = cm[0][0]
+    fp = cm[0][1]
+    fn = cm[1][0]
+    tp = cm[1][1]
+    TPR = (tp / (tp + fn)) * 100
+    FPR = (fp / (fp + tn)) * 100
 
     print("Selected Threshold: {:6.2f}".format(selected_threshold), "TPR: {:6.2f}".format(TPR), "\tFPR: {:6.2f}".format(FPR))
     predict_obj.thd = selected_threshold
