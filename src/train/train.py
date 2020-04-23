@@ -269,8 +269,8 @@ def init(model_idx, traindata, valdata, fold_index):
     # Iterate through different q_criterion to find the best suitable sections for training TIER-2
     # Higher the training TPR on B1, more suitable the set of sections are - for use in Tier-2
     #predict_t2_train_data = pObj(cnst.TIER2, cnst.TIER2_TARGET_FPR, t_args.t2_x_train, t_args.t2_y_train)
-    t2_fpr = cnst.OVERALL_TARGET_FPR - predict_t1_train_data.fpr 
-    t2_fpr = t2_fpr if 0 < t2_fpr < 1 else cnst.TIER2_TARGET_FPR
+    #t2_fpr = cnst.OVERALL_TARGET_FPR - predict_t1_train_data.fpr 
+    #t2_fpr = t2_fpr if 0 < t2_fpr < 1 else cnst.TIER2_TARGET_FPR
 
     t2_fpr = cnst.TIER2_TARGET_FPR
     print("Updated Tier-2 target FPR:", t2_fpr)

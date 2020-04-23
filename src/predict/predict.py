@@ -75,12 +75,15 @@ def calculate_prediction_metrics(predict_obj):
 
 
 def select_decision_threshold(predict_obj):
+    predict_obj.target_fpr = (np.floor((predict_obj.target_fpr / 100) * len(predict_obj.yprob[predict_obj.ytrue == 0])) * 100) / len(predict_obj.yprob[predict_obj.ytrue == 0])
     calibrated_threshold = (np.percentile(predict_obj.yprob[predict_obj.ytrue == 0], q=[100 - predict_obj.target_fpr]) * 100)[0]
+    print("Initial Calibrated Threshold:", calibrated_threshold, predict_obj.target_fpr)
     pow = str(calibrated_threshold)[::-1].find('.')
     calibrated_threshold = math.ceil(calibrated_threshold * 10 ** (pow - 1)) / (10 ** (pow - 1))
+    print("Ceiled Threshold:", calibrated_threshold)
     selected_threshold = calibrated_threshold if calibrated_threshold < 100.0 else 100.0
 
-    temp_ypred = (predict_obj.yprob >= (selected_threshold / 100)).astype(int)
+    temp_ypred = (predict_obj.yprob > (selected_threshold / 100)).astype(int)
     cm = metrics.confusion_matrix(predict_obj.ytrue, temp_ypred, labels=[cnst.BENIGN, cnst.MALWARE])
     tn = cm[0][0]
     fp = cm[0][1]
