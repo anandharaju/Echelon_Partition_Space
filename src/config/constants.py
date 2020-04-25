@@ -89,7 +89,8 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [85, 90, 92, 94]
+PERCENTILES = [85, 88, 90, 92, 94]
+RUN_FOLDS = [0, 1, 2, 3, 4]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'
