@@ -305,12 +305,13 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
     cv_obj.recon_mean_auc_score_restricted = np.append(cv_obj.recon_mean_auc_score_restricted, metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=0.01))
     print("Tier1 Restricted AUC = %0.3f [Full AUC: %0.3f]" % (metrics.roc_auc_score(pt1.ytrue, pt1.yprob, max_fpr=0.01), metrics.roc_auc_score(pt1.ytrue, pt1.yprob)), "Recon Restricted AUC = %0.3f [Full AUC: %0.3f]" % (metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=0.01), metrics.roc_auc_score(ytruereconciled, yprobreconciled)))
 
-    return cv_obj
+    return cv_obj, rfpr
 
 
 def benchmark_tier1(model_idx, ptier1, fold_index, recon_fpr):
     print("\nBenchmarking on Testing Data for TIER1 with overall FPR :", recon_fpr)
     ptier1.target_fpr = recon_fpr
+    ptier1.thd = None
     predict_tier1(model_idx, ptier1, fold_index)
 
 
@@ -353,8 +354,8 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
         new_tp_indices = np.where(np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0))[0]
         predict_t2_test_data.yprob[new_tp_indices] = predict_t1_test_data.yprobB1[new_tp_indices] + predict_t2_test_data.yprob[new_tp_indices]
 
-        cvobj = reconcile(predict_t1_test_data, predict_t2_test_data, cv_obj, fold_index)
-        benchmark_tier1(model_idx, predict_t1_test_data, fold_index, cvobj.recon_fpr_list[fold_index])
+        cvobj, benchmark_fpr = reconcile(predict_t1_test_data, predict_t2_test_data, cv_obj, fold_index)
+        benchmark_tier1(model_idx, predict_t1_test_data, fold_index, benchmark_fpr)
         return cvobj
     else:
         print("Skipping Tier-2 prediction --- Reconciliation --- Not adding fold entry to CV AUC")

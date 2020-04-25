@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=def-wangk
 #SBATCH --time=12:00:00
-#SBATCH --job-name=DS1_VAL_F34
+#SBATCH --job-name=DS1_DIV_F345
 
 #SBATCH --cpus-per-task=8
 #SBATCH --cores-per-socket=8
