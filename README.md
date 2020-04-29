@@ -51,3 +51,7 @@ deactivate
 # Compute Canada
 /home/aduraira/projects/def-wangk/aduraira
 /project/6027298/aduraira/Echelon_Linux/
+
+# Untracked Changes
+* BIDIV - activation trend identification
+* Subsampling
