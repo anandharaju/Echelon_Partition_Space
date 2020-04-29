@@ -33,7 +33,7 @@ def find_qualified_sections(sd, trend, common_trend, support):
     # print("Q_criteria by Deciles:", q_criteria_by_percentiles, "\n")
     q_sections_by_q_criteria = {}
     for q_criterion in q_criteria_by_percentiles:
-        q_sections_by_q_criteria[q_criterion] = trend.columns[activation_magnitude_gaps > q_criterion]
+        q_sections_by_q_criteria[q_criterion] = trend.columns[activation_magnitude_gaps < q_criterion]
     return q_sections_by_q_criteria
 
 

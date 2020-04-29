@@ -23,6 +23,7 @@ ATI_PREDICT_VERBOSE = VERBOSE_0
 
 #####################################################################################
 USE_GPU = True
+DO_SUBSAMPLING = False
 
 PROJECT_ROOT = os.getcwdb().decode("utf-8").split("/")[-2] if LINUX_ENV else os.getcwdb().decode("utf-8").split("\\")[-2]
 USE_PRETRAINED_FOR_TIER1 = False  # True:Malconv False:Echelon
@@ -34,17 +35,17 @@ EPOCHS = 1
 # TIER-1
 TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
-TIER1_TARGET_FPR = 0.1
+TIER1_TARGET_FPR = 0.2
 SKIP_TIER1_TRAINING = True
 SKIP_TIER2_TRAINING = False
 SKIP_ATI_PROCESSING = False
 
 # TIER-2
 TIER2 = "TIER2"
-TIER2_EPOCHS = EPOCHS + 1
+TIER2_EPOCHS = EPOCHS + 2
 TIER2_TARGET_FPR = 0
 
-OVERALL_TARGET_FPR = 0.1
+OVERALL_TARGET_FPR = 0.2
 #####################################################################################
 
 # CROSS VALIDATION
@@ -89,7 +90,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [85, 88, 90, 92, 94]
+PERCENTILES = [10, 20, 30, 40, 50]  # [80, 85, 88, 90, 91, 92, 93, 94, 95, 96]
 RUN_FOLDS = [0, 1, 2, 3, 4]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'

@@ -23,6 +23,8 @@ import numpy as np
 from sklearn.utils import class_weight
 import pandas as pd
 from analyzers.collect_available_sections import collect_sections
+import random
+from plots.plots import display_probability_chart
 
 
 # ####################################
@@ -253,7 +255,7 @@ def init(model_idx, traindata, valdata, fold_index):
     # ATI PROCESS - SELECTING QUALIFIED_SECTIONS - ### Pass B1 data
     if not cnst.SKIP_ATI_PROCESSING:
         print("Performing ATI over B1 data of Training set")
-        t_args.t2_x_train, t_args.t2_y_train = predict_t1_train_data.xB1, predict_t1_train_data.yB1
+        # t_args.t2_x_train, t_args.t2_y_train = predict_t1_train_data.xB1, predict_t1_train_data.yB1
         q_sections_by_q_criteria = ati.init(t_args) if t_args.ati else None
 
     print("Collecting section map over B1 data of Training set")
@@ -261,6 +263,13 @@ def init(model_idx, traindata, valdata, fold_index):
     # print("Train section map:\n", t_args.train_section_map)
 
     print("************************ TIER 2 TRAINING - STARTED ****************************       # Samples:", len(t_args.t2_x_train))
+    if cnst.DO_SUBSAMPLING:
+        ben_idx = t_args.t2_y_train.index[t_args.t2_y_train == cnst.BENIGN].tolist()
+        mal_idx = t_args.t2_y_train.index[t_args.t2_y_train == cnst.MALWARE].tolist()
+        t_args.t2_x_train = pd.concat([t_args.t2_x_train.loc[random.sample(ben_idx, len(mal_idx))], t_args.t2_x_train.loc[mal_idx]], ignore_index=True)
+        t_args.t2_y_train = pd.concat([t_args.t2_y_train.loc[random.sample(ben_idx, len(mal_idx))], t_args.t2_y_train.loc[mal_idx]], ignore_index=True)
+        print("Sub-sampling complete for Tier-2 training data")
+
     # Need to decide the TRAIN:VAL ratio for tier2
     t_args.t2_x_val, t_args.t2_y_val = None, None
     t_args.t2_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t2_y_train), t_args.t2_y_train)  # Class Imbalance Tackling - Setting class weights
@@ -308,7 +317,7 @@ def init(model_idx, traindata, valdata, fold_index):
         # predict_t2_train_data = predict.predict_tier2(model_idx, predict_t2_train_data, fold_index)
         predict_t2_val_data.thd = None
         predict_t2_val_data = predict.predict_tier2(model_idx, predict_t2_val_data, fold_index)
-
+        display_probability_chart(predict_t2_val_data.ytrue, predict_t2_val_data.yprob, predict_t2_val_data.thd, "Training_TIER2_PROB_PLOT_" + str(fold_index + 1) + "{:6.2f}".format(q_criterion))
         print("FPR: {:6.2f}".format(predict_t2_val_data.fpr), "TPR: {:6.2f}".format(predict_t2_val_data.tpr), "\tTHD2: {:6.2f}".format(predict_t2_val_data.thd))
 
         curdiff = predict_t2_val_data.tpr - predict_t2_val_data.fpr

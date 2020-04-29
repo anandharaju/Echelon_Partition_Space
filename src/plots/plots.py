@@ -1,5 +1,7 @@
 import numpy as np
 from sklearn import metrics
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import config.constants as cnst
 import time
@@ -266,7 +268,7 @@ def save_stats_as_plot(fmaps):
     print("Stats saved as plot in file: ", plot_file)'''
 
 
-def display_probability_chart(Y, pred, threshold, plot_name):
+def display_probability_chart(Y, prob, threshold, plot_name):
     b = Y == 0
     m = Y == 1
 
@@ -279,8 +281,8 @@ def display_probability_chart(Y, pred, threshold, plot_name):
     ax.plot(Y[b], range(0, len(Y[b])), 'bo', label='Target-Benign', markersize=8)
     ax.plot(Y[m], range(0, len(Y[m])), 'ro', label='Target-Malware', markersize=8)
 
-    ax.plot(pred[b], range(0, len(pred[b])), 'b1')
-    ax.plot(pred[m], range(0, len(pred[m])), 'r1')
+    ax.plot(prob[b], range(0, len(prob[b])), 'b1')
+    ax.plot(prob[m], range(0, len(prob[m])), 'r1')
 
     if threshold is not None:
         ax.plot([threshold/100, threshold/100], [0, len(Y)], 'black', linestyle=':', label="Selected Threshold")

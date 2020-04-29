@@ -9,6 +9,7 @@ from utils.filter import filter_benign_fn_files, filter_malware_fp_files
 from config import constants as cnst
 from .predict_args import DefaultPredictArguments, Predict as pObj
 import math
+from plots.plots import display_probability_chart
 
 
 def predict_byte(model, xfiles, args):
@@ -344,6 +345,7 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
         predict_t2_test_data.q_sections = q_sections
         predict_t2_test_data.predict_section_map = section_map
         predict_t2_test_data = predict_tier2(model_idx, predict_t2_test_data, fold_index)
+        display_probability_chart(predict_t2_test_data.ytrue, predict_t2_test_data.yprob, predict_t2_test_data.thd, "TESTING_TIER2_PROB_PLOT_" + str(fold_index+1))
         print("List of TPs found: ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
         print("List of New FPs  : ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
     
