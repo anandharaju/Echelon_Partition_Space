@@ -42,7 +42,7 @@ SKIP_ATI_PROCESSING = False
 
 # TIER-2
 TIER2 = "TIER2"
-TIER2_EPOCHS = EPOCHS + 2
+TIER2_EPOCHS = EPOCHS + 9
 TIER2_TARGET_FPR = 0
 
 OVERALL_TARGET_FPR = 0.2
@@ -90,7 +90,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [10, 20, 30, 40, 50]  # [80, 85, 88, 90, 91, 92, 93, 94, 95, 96]
+PERCENTILES = [85, 88, 90, 91, 92, 93, 94, 95, 97]
 RUN_FOLDS = [0, 1, 2, 3, 4]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
