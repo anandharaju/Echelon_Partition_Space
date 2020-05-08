@@ -10,24 +10,26 @@ from config import constants as cnst
 from .predict_args import DefaultPredictArguments, Predict as pObj
 import math
 from plots.plots import display_probability_chart
+from analyzers.collect_exe_files import get_partition_data, partition_pkl_files
+import gc
 
 
-def predict_byte(model, xfiles, args):
+def predict_byte(model, partition, xfiles, args):
     xlen = len(xfiles)
     pred_steps = xlen//args.batch_size if xlen % args.batch_size == 0 else xlen//args.batch_size + 1
     pred = model.predict_generator(
-        utils.data_generator(xfiles, np.ones(xfiles.shape), args.max_len, args.batch_size, shuffle=False),
+        utils.data_generator(partition, xfiles, np.ones(xfiles.shape), args.max_len, args.batch_size, shuffle=False),
         steps=pred_steps,
         verbose=args.verbose
         )
     return pred
 
 
-def predict_byte_by_section(model, xfiles, q_sections, section_map, args):
+def predict_byte_by_section(model, partition, xfiles, q_sections, section_map, args):
     xlen = len(xfiles)
     pred_steps = xlen//args.batch_size if xlen % args.batch_size == 0 else xlen//args.batch_size + 1
     pred = model.predict_generator(
-        utils.data_generator_by_section(q_sections, section_map, xfiles, np.ones(xfiles.shape), args.max_len, args.batch_size, shuffle=False),
+        utils.data_generator_by_section(partition, q_sections, section_map, xfiles, np.ones(xfiles.shape), args.max_len, args.batch_size, shuffle=False),
         steps=pred_steps,
         verbose=args.verbose
         )
@@ -153,7 +155,7 @@ def predict_tier1(model_idx, pobj, fold_index):
     # model.summary()
 
     if cnst.EXECUTION_TYPE[model_idx] == cnst.BYTE:
-        pobj.yprob = predict_byte(tier1_model, pobj.xtrue, predict_args)
+        pobj.yprob = predict_byte(tier1_model, pobj.partition, pobj.xtrue, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FEATURISTIC:
         pobj.yprob = predict_by_features(tier1_model, pobj.xtrue, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FUSION:
@@ -174,7 +176,7 @@ def predict_tier2(model_idx, pobj, fold_index):
 
     if cnst.EXECUTION_TYPE[model_idx] == cnst.BYTE:
         # pbs.trigger_predict_by_section()
-        pobj.yprob = predict_byte_by_section(tier2_model, pobj.xtrue, pobj.q_sections, pobj.predict_section_map, predict_args)
+        pobj.yprob = predict_byte_by_section(tier2_model, pobj.partition, pobj.xtrue, pobj.q_sections, pobj.predict_section_map, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FEATURISTIC:
         pobj.yprob = predict_by_features(tier2_model, pobj.xtrue, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FUSION:
@@ -229,23 +231,23 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
           "\tTNs:", np.sum(np.all([pt1.ytrue.ravel() == cnst.BENIGN, pt1.ypred.ravel() == cnst.BENIGN], axis=0)),
           "\tFNs:", np.sum(np.all([pt1.ytrue.ravel() == cnst.MALWARE, pt1.ypred.ravel() == cnst.BENIGN], axis=0)))
 
-    scaled_pt1_yprobM1 = (pt1.yprobM1 - np.min(pt1.yprobM1)) / (np.max(pt1.yprobM1) - np.min(pt1.yprobM1))
-    scaled_pt1_boosted_yprobB2 = (pt1.boosted_yprobB2 - np.min(pt1.boosted_yprobB2)) / (np.max(pt1.boosted_yprobB2) - np.min(pt1.boosted_yprobB2))
-    scaled_pt2_yprob = (pt2.yprob - np.min(pt2.yprob)) / (np.max(pt2.yprob) - np.min(pt2.yprob))
+    # scaled_pt1_yprobM1 = (pt1.yprobM1 - np.min(pt1.yprobM1)) / (np.max(pt1.yprobM1) - np.min(pt1.yprobM1))
+    # scaled_pt1_boosted_yprobB2 = (pt1.boosted_yprobB2 - np.min(pt1.boosted_yprobB2)) / (np.max(pt1.boosted_yprobB2) - np.min(pt1.boosted_yprobB2))
+    # scaled_pt2_yprob = (pt2.yprob - np.min(pt2.yprob)) / (np.max(pt2.yprob) - np.min(pt2.yprob))
 
     if cnst.PERFORM_B2_BOOSTING:
         print("                       Boosted:"+str(np.shape(pt1.boosted_xB2)[0]), "\tRemaining B1:"+str(np.shape(pt2.xtrue)[0]))
         xtruereconciled = np.concatenate((pt1.xM1, pt1.boosted_xB2, pt2.xtrue))  # pt2.xtrue contains xB1
         ytruereconciled = np.concatenate((pt1.yM1, pt1.boosted_yB2, pt2.ytrue))
         ypredreconciled = np.concatenate((pt1.ypredM1, pt1.boosted_ypredB2, pt2.ypred))
-        # yprobreconciled = np.concatenate((pt1.yprobM1, pt1.boosted_yprobB2, pt2.yprob))
-        yprobreconciled = np.concatenate((scaled_pt1_yprobM1, scaled_pt1_boosted_yprobB2, scaled_pt2_yprob))
+        yprobreconciled = np.concatenate((pt1.yprobM1, pt1.boosted_yprobB2, pt2.yprob))
+        # yprobreconciled = np.concatenate((scaled_pt1_yprobM1, scaled_pt1_boosted_yprobB2, scaled_pt2_yprob))
     else:
         xtruereconciled = np.concatenate((pt1.xM1, pt2.xtrue))  # pt2.xtrue contains xB1
         ytruereconciled = np.concatenate((pt1.yM1, pt2.ytrue))
         ypredreconciled = np.concatenate((pt1.ypredM1, pt2.ypred))
-        # yprobreconciled = np.concatenate((pt1.yprobM1, pt2.yprob))
-        yprobreconciled = np.concatenate((scaled_pt1_yprobM1, scaled_pt2_yprob))
+        yprobreconciled = np.concatenate((pt1.yprobM1, pt2.yprob))
+        # yprobreconciled = np.concatenate((scaled_pt1_yprobM1, scaled_pt2_yprob))
 
     print("AFTER RECONCILIATION :", "[M1+B1] => [", "M1+(M2+B2)", "+B2_Boosted" if cnst.PERFORM_B2_BOOSTING else "", "]  =", np.shape(xtruereconciled)[0],
           "New TPs found: [M2] =>", np.sum(np.all([pt2.ytrue.ravel() == cnst.MALWARE, pt2.ypred.ravel() == cnst.MALWARE], axis=0)),
@@ -259,7 +261,7 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
     reconciled_fpr = np.array([])
     tier1_tpr = np.array([])
     tier1_fpr = np.array([])
-    probability_score = np.arange(0, 100.01, 0.1)
+    probability_score = np.arange(0, 100.01, 0.2)
     for p in probability_score:
         rtpr, rfpr = None, None
         if cnst.PERFORM_B2_BOOSTING:
@@ -322,7 +324,13 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
     predict_t1_test_data = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
     predict_t1_test_data.thd = thd1
     predict_t1_test_data.boosting_upper_bound = boosting_upper_bound
+    predict_t1_test_data.partition = get_partition_data("test", fold_index)
     predict_t1_test_data = predict_tier1(model_idx, predict_t1_test_data, fold_index)
+
+    print("Initiating garbage collection")
+    del predict_t1_test_data.partition  # Release Memory
+    gc.collect()
+    print("Completed garbage collection")
 
     # print("TPR:", predict_t1_test_data.tpr, "FPR:", predict_t1_test_data.fpr)
     # plots.plot_auc(ytrain, pred_proba1, thd1, "tier1")
@@ -332,6 +340,8 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
     test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xM1), pd.DataFrame(predict_t1_test_data.yM1), pd.DataFrame(predict_t1_test_data.yprobM1)], axis=1)
     test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
 
+    partition_pkl_files("b1_test", fold_index, test_b1datadf.iloc[:, 0])
+
     test_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None)
     predict_t1_test_data.xB1, predict_t1_test_data.yB1 = test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1]
     test_m1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None)
@@ -339,12 +349,19 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
 
     # TIER-2 PREDICTION
     if thd2 is not None and q_sections is not None:
-        print("Prediction on Testing Data - TIER2 [B1 data]\t\t\tSection Map Length:", len(section_map))
+        print("Prediction on Testing Data - TIER2 [B1 data]")  # \t\t\tSection Map Length:", len(section_map))
         predict_t2_test_data = pObj(cnst.TIER2, None, predict_t1_test_data.xB1, predict_t1_test_data.yB1)
         predict_t2_test_data.thd = thd2
         predict_t2_test_data.q_sections = q_sections
         predict_t2_test_data.predict_section_map = section_map
+        predict_t2_test_data.partition = get_partition_data("b1_test", fold_index)
         predict_t2_test_data = predict_tier2(model_idx, predict_t2_test_data, fold_index)
+
+        print("Initiating garbage collection")
+        del predict_t2_test_data.partition  # Release Memory
+        gc.collect()
+        print("Completed garbage collection")
+
         display_probability_chart(predict_t2_test_data.ytrue, predict_t2_test_data.yprob, predict_t2_test_data.thd, "TESTING_TIER2_PROB_PLOT_" + str(fold_index+1))
         print("List of TPs found: ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
         print("List of New FPs  : ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
@@ -354,10 +371,13 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
         predict_t2_test_data.yprob[still_benign_indices] = predict_t1_test_data.yprobB1[still_benign_indices]  # Assign Tier-1 probabilities for samples that are still benign to avoid AUC conflict
 
         new_tp_indices = np.where(np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0))[0]
-        predict_t2_test_data.yprob[new_tp_indices] = predict_t1_test_data.yprobB1[new_tp_indices] + predict_t2_test_data.yprob[new_tp_indices]
+        predict_t2_test_data.yprob[new_tp_indices] -= predict_t2_test_data.yprob[new_tp_indices] + 1
+
+        new_fp_indices = np.where(np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0))[0]
+        predict_t2_test_data.yprob[new_fp_indices] -= predict_t2_test_data.yprob[new_fp_indices]
 
         cvobj, benchmark_fpr = reconcile(predict_t1_test_data, predict_t2_test_data, cv_obj, fold_index)
-        benchmark_tier1(model_idx, predict_t1_test_data, fold_index, benchmark_fpr)
+        # benchmark_tier1(model_idx, predict_t1_test_data, fold_index, benchmark_fpr)
         return cvobj
     else:
         print("Skipping Tier-2 prediction --- Reconciliation --- Not adding fold entry to CV AUC")

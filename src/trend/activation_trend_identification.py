@@ -37,37 +37,35 @@ def find_qualified_sections(sd, trend, common_trend, support):
     return q_sections_by_q_criteria
 
 
-def parse_pe_pkl(file_id, file, unprocessed):
-    section_bounds = []
-    file_byte_size = None
-    max_section_end_offset = 0
-    try:
-        with open(file, 'rb') as pkl:
-            fjson = pickle.load(pkl)
-            file_byte_size = fjson['size_byte']
-            pkl_sections = fjson["section_info"].keys()
-            for pkl_section in pkl_sections:
-                section_bounds.append(
-                    (pkl_section,
-                     fjson["section_info"][pkl_section]["section_bounds"]["start_offset"],
-                     fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]))
-                if fjson["section_info"][pkl_section]["section_bounds"]["end_offset"] > max_section_end_offset:
-                    max_section_end_offset = fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]
+def find_qualified_sections(sd, trend, common_trend, support):
+    btrend = trend.loc["BENIGN_ACTIVATION_MAGNITUDE"]
+    mtrend = trend.loc["MALWARE_ACTIVATION_MAGNITUDE"]
 
-            # Placeholder section "padding" - for activations in padding region
-            if max_section_end_offset < fjson["size_byte"]:
-                section_bounds.append((cnst.TAIL, max_section_end_offset + 1, fjson["size_byte"]))
-            section_bounds.append((cnst.PADDING, fjson["size_byte"] + 1, cnst.MAX_FILE_SIZE_LIMIT))
-    except Exception as e:
-        print("parse failed . . . [FILE ID - ", file_id, "]  [", file, "] ", e)
-        unprocessed += 1
-    return section_bounds, unprocessed, file_byte_size
+    # Averaging based on respective benign and malware population
+    btrend = btrend / sd.b1_b_truth_count
+    mtrend = mtrend / sd.b1_m_truth_count
+
+    btrend[btrend == 0] = 1
+    mtrend[mtrend == 0] = 1
+
+    malfluence = mtrend / btrend
+    benfluence = btrend / mtrend
+
+    mal_q_criteria_by_percentiles = np.percentile(malfluence, q=cnst.PERCENTILES)
+    ben_q_criteria_by_percentiles = np.percentile(benfluence, q=cnst.PERCENTILES)
+
+    q_sections_by_q_criteria = {}
+    for i, val in enumerate(cnst.PERCENTILES):
+        q_sections_by_q_criteria[mal_q_criteria_by_percentiles[i]] = np.unique(np.concatenate([trend.columns[malfluence > mal_q_criteria_by_percentiles[i]], trend.columns[benfluence > ben_q_criteria_by_percentiles[i]]]))
+        print("Mal Sections:", trend.columns[malfluence > mal_q_criteria_by_percentiles[i]])
+        print("Ben Sections:", trend.columns[benfluence > ben_q_criteria_by_percentiles[i]])
+    return q_sections_by_q_criteria
 
 
-def get_feature_map(smodel, file):
+def get_feature_map(smodel, partition, file):
     predict_args = DefaultPredictArguments()
     predict_args.verbose = cnst.ATI_PREDICT_VERBOSE
-    prediction = predict_byte(smodel, np.array([file]), predict_args)
+    prediction = predict_byte(smodel, partition, np.array([file]), predict_args)
     raw_feature_map = prediction[0]
     return raw_feature_map
 
@@ -185,7 +183,8 @@ def process_files(args):
             unprocessed += 1
             continue
         section_bounds, unprocessed, fsize = parse_pe_pkl(i, cnst.DATA_SOURCE_PATH + file, unprocessed)
-        raw_feature_map = get_feature_map(stunted_model, file)
+        file_part = {file[:-4]: args.b1_train_partition[file[:-4]]}
+        raw_feature_map = get_feature_map(stunted_model, file_part, file)
         # if len(np.shape(raw_feature_map)) == 1:
         #    feature_map = raw_feature_map.ravel()
         # else:

@@ -26,7 +26,7 @@ def train_test_split(data, label, val_size, seed):
     return x_train, x_test, y_train, y_test
 
 
-def data_generator(data, labels, max_len, batch_size, shuffle):
+def data_generator(partition, data, labels, max_len, batch_size, shuffle):
     idx = np.arange(len(data))
     if shuffle:
         np.random.shuffle(idx)
@@ -34,18 +34,14 @@ def data_generator(data, labels, max_len, batch_size, shuffle):
     while True:
         for i in batches:
             try:
-                xx = preprocess(data[i], max_len)[0]
-                # from sklearn.preprocessing import MinMaxScaler
-                # scaler = MinMaxScaler()
-                # scaler.fit(range(0, 257)[:, np.newaxis])
-                # xx = np.array(scaler.transform(xx))
+                xx = preprocess(partition, data[i], max_len)[0]
                 yy = labels[i]
                 yield (xx, yy)
             except Exception as e:
-                print("Error during PRE-PROCESSING . . .   [", labels[i], data[i], "]", str(e))
+                print("TIER-1 Error during PRE-PROCESSING . . .   [", labels[i], data[i], "]", str(e))
 
 
-def data_generator_by_section(sections, section_map, data, labels, max_len, batch_size, shuffle):
+def data_generator_by_section(partition, sections, section_map, data, labels, max_len, batch_size, shuffle):
     idx = np.arange(len(data))
     if shuffle:
         np.random.shuffle(idx)
@@ -53,11 +49,11 @@ def data_generator_by_section(sections, section_map, data, labels, max_len, batc
     while True:
         for i in batches:
             try:
-                xx = preprocess_by_section(data[i], max_len, sections, section_map)[0]
+                xx = preprocess_by_section(partition, data[i], max_len, sections, section_map)[0]
                 yy = labels[i]
                 yield (xx, yy)
             except Exception as e:
-                print("Error during PRE-PROCESSING SECTIONS. . .   [", labels[i], data[i], "]", str(e))
+                print("TIER-2 Error during PRE-PROCESSING SECTIONS. . .   [", labels[i], data[i], "]", str(e))
 
 
 def data_generator_by_features(data, labels, batch_size, shuffle, drop_features=None):

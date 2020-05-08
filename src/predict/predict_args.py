@@ -37,6 +37,8 @@ class Predict:
     q_sections = None
     predict_section_map = None
 
+    partition = None
+
 
 class DefaultPredictArguments:
     batch_size = cnst.PREDICT_BATCH_SIZE

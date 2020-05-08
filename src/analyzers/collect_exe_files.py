@@ -3,15 +3,69 @@ import pefile
 import pandas as pd
 from shutil import copyfile
 import config.constants as cnst
+import pickle
+
+
+def partition_pkl_files(type, fold, files):
+    partition_label = type + "_" + str(fold)
+    # csv = pd.read_csv(csv_path, header=None)
+    print("Total number of files:", len(files))
+    partition_count = 1
+    file_count = 1
+    partition_data = {}
+    cur_partition_size = 0
+
+    for file in files:  # iloc[:, 0]:
+        src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\", file)
+        src_file_size = os.stat(src_path).st_size
+
+        if cur_partition_size > cnst.MAX_PARTITION_SIZE:
+            partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"_p"+str(partition_count)+".pkl")
+            with open(partition_path, "wb") as phandle:
+                pickle.dump(partition_data, phandle)
+            print("Created Partition", partition_label+"_p"+str(partition_count), "with", file_count-1, "files")
+            file_count = 1
+            partition_count += 1
+            partition_data = {}
+            cur_partition_size = 0
+
+        with open(src_path, 'rb') as f:
+            cur_pkl = pickle.load(f)
+            partition_data[file[:-4]] = cur_pkl
+            cur_partition_size += src_file_size
+            file_count += 1
+
+    if cur_partition_size > 0:
+        partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"_p"+str(partition_count) + ".pkl")
+        with open(partition_path, "wb") as phandle:
+            pickle.dump(partition_data, phandle)
+        print("Created Partition", partition_path, "with", file_count-1, "files")
+        partition_count += 1
+        partition_data = {}
+        cur_partition_size = 0
+
+
+def get_partition_data(type, fold):
+    partition_label = type + "_" + str(fold)
+    print("Loading partitioned data for Fold-"+str(fold+1)+". . .", partition_label)
+    partition_count = 1
+    partition_path = os.path.join(cnst.DATA_SOURCE_PATH + partition_label + "_p" + str(partition_count) + ".pkl")
+
+    if not os.path.isfile(partition_path):
+        print("Partition file ", partition_path, ' does not exist.')
+    else:
+        with open(partition_path, "rb") as pkl_handle:
+            return pickle.load(pkl_handle)
 
 
 def group_files_by_pkl_list():
-    csv = pd.read_csv("D:\\03_GitWorks\\April15\\data\\ds1_20.csv", header=None)
-    dst_folder = "D:\\00_SFU\\ds1_20_raw\\"
+    csv = pd.read_csv("D:\\03_GitWorks\\Project\\data\\xs_pkl.csv", header=None)
+    dst_folder = "D:\\03_GitWorks\\Project\\data\\xs_pkl\\"
     for file in csv.iloc[:, 0]:
-        src_path = os.path.join(cnst.DATA_SOURCE_PATH, file)
+        src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\", file)
         dst_Path = os.path.join(dst_folder, file)
-        copyfile(src_path[:-4], dst_Path[:-4])
+        copyfile(src_path, dst_Path)
+        # copyfile(src_path[:-4], dst_Path[:-4])
 
 
 def copy_files(src_path, dst_path, ext, max_size):
@@ -74,6 +128,10 @@ if __name__ == '__main__':
     max_files = 110000
     # total_count, total_size = copy_files(src_path, dst_path, ext, max_size)
 
-    group_files_by_pkl_list()
+    # group_files_by_pkl_list()
+    for fold in range(0, 5):
+        partition_pkl_files("master_train_"+str(fold), "D:\\03_GitWorks\\Project\\data\\master_train_"+str(fold)+"_pkl.csv")
+        partition_pkl_files("master_val_"+str(fold), "D:\\03_GitWorks\\Project\\data\\master_val_"+str(fold)+"_pkl.csv")
+        partition_pkl_files("master_test_"+str(fold), "D:\\03_GitWorks\\Project\\data\\master_test_"+str(fold)+"_pkl.csv")
     print("\nCompleted.")
 
