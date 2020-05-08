@@ -23,7 +23,7 @@ ATI_PREDICT_VERBOSE = VERBOSE_0
 
 #####################################################################################
 USE_GPU = False
-REGENERATE_DATA = True
+REGENERATE_DATA = False
 REGENERATE_PARTITION = True
 DO_SUBSAMPLING = False
 
@@ -38,7 +38,7 @@ EPOCHS = 1
 TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
 TIER1_TARGET_FPR = 0.01
-SKIP_TIER1_TRAINING = True
+SKIP_TIER1_TRAINING = False
 SKIP_TIER2_TRAINING = False
 SKIP_ATI_PROCESSING = False
 
@@ -56,7 +56,7 @@ INITIAL_FOLD = 0
 RANDOMIZE = False  # Set Random seed for True
 
 #  DATA SOURCE
-MAX_PARTITION_SIZE = 5 * 2 ** 30
+MAX_PARTITION_SIZE = 200 * 2 ** 20
 MAX_SECT_BYTE_MAP_SIZE = 2000
 MAX_FILE_SIZE_LIMIT = 2**20  # 204800
 MAX_FILE_COUNT_LIMIT = None
@@ -94,7 +94,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
 PERCENTILES = [92]
-RUN_FOLDS = [0, 1, 2]
+RUN_FOLDS = [0]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'

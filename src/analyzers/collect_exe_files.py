@@ -6,50 +6,72 @@ import config.constants as cnst
 import pickle
 
 
-def partition_pkl_files(type, fold, files):
+def partition_pkl_files(type, fold, files, labels):
     partition_label = type + "_" + str(fold)
     # csv = pd.read_csv(csv_path, header=None)
     print("Total number of files:", len(files))
-    partition_count = 1
-    file_count = 1
-    partition_data = {}
-    cur_partition_size = 0
+    partition_count = 0
+    file_count = 0
+    t1_partition_data = {}
+    t2_partition_data = {}
+    cur_t1_partition_size = 0
+    cur_t2_partition_size = 0
+    start = 0
+    end = 0
 
-    for file in files:  # iloc[:, 0]:
-        src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\", file)
-        src_file_size = os.stat(src_path).st_size
+    for i, file in enumerate(files):  # iloc[:, 0]:
+        t1_pkl_src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickles\\t1\\", file)
+        t2_pkl_src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickles\\t2\\", file)
 
-        if cur_partition_size > cnst.MAX_PARTITION_SIZE:
-            partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"_p"+str(partition_count)+".pkl")
-            with open(partition_path, "wb") as phandle:
-                pickle.dump(partition_data, phandle)
-            print("Created Partition", partition_label+"_p"+str(partition_count), "with", file_count-1, "files")
-            file_count = 1
+        t1_src_file_size = os.stat(t1_pkl_src_path).st_size
+        t2_src_file_size = os.stat(t2_pkl_src_path).st_size
+
+        if cur_t1_partition_size > cnst.MAX_PARTITION_SIZE or cur_t2_partition_size > cnst.MAX_PARTITION_SIZE:
+            t1_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label + "_t1_p" + str(partition_count))
+            t2_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label + "_t2_p" + str(partition_count))
+
+            with open(t1_partition_path+".pkl", "wb") as pt1handle:
+                pickle.dump(t1_partition_data, pt1handle)
+            with open(t2_partition_path+".pkl", "wb") as pt2handle:
+                pickle.dump(t2_partition_data, pt2handle)
+
+            end = i
+            pd.DataFrame(list(zip(files[start:end], labels[start:end]))).to_csv(cnst.DATA_SOURCE_PATH + partition_label + "_p" + str(partition_count) + ".csv", header=None, index=False)
+            print("Created Partition", partition_label+"_p"+str(partition_count), "with", file_count, "files and tracker csv with " + str(len(files[start:end])) + " files.")
+            file_count = 0
             partition_count += 1
-            partition_data = {}
-            cur_partition_size = 0
+            t1_partition_data = {}
+            t2_partition_data = {}
+            cur_t1_partition_size = 0
+            cur_t2_partition_size = 0
+            start = end
 
-        with open(src_path, 'rb') as f:
-            cur_pkl = pickle.load(f)
-            partition_data[file[:-4]] = cur_pkl
-            cur_partition_size += src_file_size
+        with open(t1_pkl_src_path, 'rb') as f1, open(t2_pkl_src_path, 'rb') as f2:
+            cur_t1pkl = pickle.load(f1)
+            cur_t2pkl = pickle.load(f2)
+            t1_partition_data[file[:-4]] = cur_t1pkl
+            t2_partition_data[file[:-4]] = cur_t2pkl
+            cur_t1_partition_size += t1_src_file_size
+            cur_t2_partition_size += t2_src_file_size
             file_count += 1
 
-    if cur_partition_size > 0:
-        partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"_p"+str(partition_count) + ".pkl")
-        with open(partition_path, "wb") as phandle:
-            pickle.dump(partition_data, phandle)
-        print("Created Partition", partition_path, "with", file_count-1, "files")
+    if cur_t1_partition_size > 0 or cur_t2_partition_size > 0:
+        t1_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"_t1_p"+str(partition_count))
+        t2_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"_t2_p"+str(partition_count))
+        with open(t1_partition_path + ".pkl", "wb") as pt1handle:
+            pickle.dump(t1_partition_data, pt1handle)
+        with open(t2_partition_path + ".pkl", "wb") as pt2handle:
+            pickle.dump(t2_partition_data, pt2handle)
+        pd.DataFrame(list(zip(files[start:], labels[start:]))).to_csv(cnst.DATA_SOURCE_PATH + partition_label + "_p" + str(partition_count) + ".csv", header=None, index=False)
+        print("Created Partition", partition_label+"_p"+str(partition_count), "with", file_count, "files and tracker csv with " + str(len(files[start:])) + " files.")
         partition_count += 1
-        partition_data = {}
-        cur_partition_size = 0
+    return partition_count
 
 
-def get_partition_data(type, fold):
-    partition_label = type + "_" + str(fold)
+def get_partition_data(type, fold, partition_count, tier):
+    partition_label = type + "_" + str(fold) + "_" + tier + "_p" + str(partition_count)
     print("Loading partitioned data for Fold-"+str(fold+1)+". . .", partition_label)
-    partition_count = 1
-    partition_path = os.path.join(cnst.DATA_SOURCE_PATH + partition_label + "_p" + str(partition_count) + ".pkl")
+    partition_path = os.path.join(cnst.DATA_SOURCE_PATH + partition_label + ".pkl")
 
     if not os.path.isfile(partition_path):
         print("Partition file ", partition_path, ' does not exist.')
@@ -65,7 +87,29 @@ def group_files_by_pkl_list():
         src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\", file)
         dst_Path = os.path.join(dst_folder, file)
         copyfile(src_path, dst_Path)
-        # copyfile(src_path[:-4], dst_Path[:-4])
+
+
+def sep_files_by_pkl_list():
+    csv = pd.read_csv("D:\\03_GitWorks\\Echelon_Partition\\data\\xs_pkl.csv", header=None)
+    t1_dst_folder = "D:\\08_Dataset\\Internal\\mar2020\\pickles\\t1\\"
+    t2_dst_folder = "D:\\08_Dataset\\Internal\\mar2020\\pickles\\t2\\"
+    if not os.path.exists(t1_dst_folder):
+        os.makedirs(t1_dst_folder)
+    if not os.path.exists(t2_dst_folder):
+        os.makedirs(t2_dst_folder)
+    for file in csv.iloc[:, 0]:
+        src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\", file)
+        with open(src_path, 'rb') as f:
+            t1_pkl = {}
+            t2_pkl = {}
+            cur_pkl = pickle.load(f)
+            t1_pkl = {"whole_bytes": cur_pkl["whole_bytes"], "benign": cur_pkl["benign"]}
+            del cur_pkl["whole_bytes"]
+            t2_pkl = cur_pkl
+            with open(t1_dst_folder + file, "wb") as t1handle:
+                pickle.dump(t1_pkl, t1handle)
+            with open(t2_dst_folder + file, "wb") as t2handle:
+                pickle.dump(t2_pkl, t2handle)
 
 
 def copy_files(src_path, dst_path, ext, max_size):
@@ -128,6 +172,10 @@ if __name__ == '__main__':
     max_files = 110000
     # total_count, total_size = copy_files(src_path, dst_path, ext, max_size)
 
+    sep_files_by_pkl_list()
+
+    '''
+
     # group_files_by_pkl_list()
     for fold in range(0, 5):
         partition_pkl_files("master_train_"+str(fold), "D:\\03_GitWorks\\Project\\data\\master_train_"+str(fold)+"_pkl.csv")
@@ -135,3 +183,4 @@ if __name__ == '__main__':
         partition_pkl_files("master_test_"+str(fold), "D:\\03_GitWorks\\Project\\data\\master_test_"+str(fold)+"_pkl.csv")
     print("\nCompleted.")
 
+    '''

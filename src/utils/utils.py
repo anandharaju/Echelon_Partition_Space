@@ -38,7 +38,7 @@ def data_generator(partition, data, labels, max_len, batch_size, shuffle):
                 yy = labels[i]
                 yield (xx, yy)
             except Exception as e:
-                print("TIER-1 Error during PRE-PROCESSING . . .   [", labels[i], data[i], "]", str(e))
+                print(str(e), "TIER-1 Error during PRE-PROCESSING . . . ")  # [", labels[i], data[i], "]")
 
 
 def data_generator_by_section(partition, sections, section_map, data, labels, max_len, batch_size, shuffle):
