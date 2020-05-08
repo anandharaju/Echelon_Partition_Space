@@ -26,28 +26,6 @@ def find_qualified_sections(sd, trend, common_trend, support):
     btrend[btrend == 0] = 1
     mtrend[mtrend == 0] = 1
 
-    activation_magnitude_gaps = mtrend / btrend
-    q_criteria_by_percentiles = np.percentile(activation_magnitude_gaps, q=cnst.PERCENTILES)
-    # q_criteria = [0]
-    # q_criteria = np.append([0], q_criteria)
-    # print("Q_criteria by Deciles:", q_criteria_by_percentiles, "\n")
-    q_sections_by_q_criteria = {}
-    for q_criterion in q_criteria_by_percentiles:
-        q_sections_by_q_criteria[q_criterion] = trend.columns[activation_magnitude_gaps > q_criterion]
-    return q_sections_by_q_criteria
-
-
-def find_qualified_sections(sd, trend, common_trend, support):
-    btrend = trend.loc["BENIGN_ACTIVATION_MAGNITUDE"]
-    mtrend = trend.loc["MALWARE_ACTIVATION_MAGNITUDE"]
-
-    # Averaging based on respective benign and malware population
-    btrend = btrend / sd.b1_b_truth_count
-    mtrend = mtrend / sd.b1_m_truth_count
-
-    btrend[btrend == 0] = 1
-    mtrend[mtrend == 0] = 1
-
     malfluence = mtrend / btrend
     benfluence = btrend / mtrend
 
@@ -60,6 +38,33 @@ def find_qualified_sections(sd, trend, common_trend, support):
         print("Mal Sections:", trend.columns[malfluence > mal_q_criteria_by_percentiles[i]])
         print("Ben Sections:", trend.columns[benfluence > ben_q_criteria_by_percentiles[i]])
     return q_sections_by_q_criteria
+
+
+def parse_pe_pkl(file_id, file, unprocessed):
+    section_bounds = []
+    file_byte_size = None
+    max_section_end_offset = 0
+    try:
+        with open(file, 'rb') as pkl:
+            fjson = pickle.load(pkl)
+            file_byte_size = fjson['size_byte']
+            pkl_sections = fjson["section_info"].keys()
+            for pkl_section in pkl_sections:
+                section_bounds.append(
+                    (pkl_section,
+                     fjson["section_info"][pkl_section]["section_bounds"]["start_offset"],
+                     fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]))
+                if fjson["section_info"][pkl_section]["section_bounds"]["end_offset"] > max_section_end_offset:
+                    max_section_end_offset = fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]
+
+            # Placeholder section "padding" - for activations in padding region
+            if max_section_end_offset < fjson["size_byte"]:
+                section_bounds.append((cnst.TAIL, max_section_end_offset + 1, fjson["size_byte"]))
+            section_bounds.append((cnst.PADDING, fjson["size_byte"] + 1, cnst.MAX_FILE_SIZE_LIMIT))
+    except Exception as e:
+        print("parse failed . . . [FILE ID - ", file_id, "]  [", file, "] ", e)
+        unprocessed += 1
+    return section_bounds, unprocessed, file_byte_size
 
 
 def get_feature_map(smodel, partition, file):
