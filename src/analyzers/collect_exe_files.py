@@ -20,8 +20,8 @@ def partition_pkl_files(type, fold, files, labels):
     end = 0
 
     for i, file in enumerate(files):  # iloc[:, 0]:
-        t1_pkl_src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickles\\t1\\", file)
-        t2_pkl_src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickles\\t2\\", file)
+        t1_pkl_src_path = os.path.join(cnst.PKL_SOURCE_PATH + cnst.ESC + "t1" + cnst.ESC, file)
+        t2_pkl_src_path = os.path.join(cnst.PKL_SOURCE_PATH + cnst.ESC + "t2" + cnst.ESC, file)
 
         t1_src_file_size = os.stat(t1_pkl_src_path).st_size
         t2_src_file_size = os.stat(t2_pkl_src_path).st_size
@@ -90,15 +90,15 @@ def group_files_by_pkl_list():
 
 
 def sep_files_by_pkl_list():
-    csv = pd.read_csv("D:\\03_GitWorks\\Echelon_Partition\\data\\xs_pkl.csv", header=None)
-    t1_dst_folder = "D:\\08_Dataset\\Internal\\mar2020\\pickles\\t1\\"
-    t2_dst_folder = "D:\\08_Dataset\\Internal\\mar2020\\pickles\\t2\\"
+    csv = pd.read_csv(cnst.ALL_FILE, header=None)
+    t1_dst_folder = cnst.PKL_SOURCE_PATH + cnst.ESC + "t1" + cnst.ESC
+    t2_dst_folder = cnst.PKL_SOURCE_PATH + cnst.ESC + "t2" + cnst.ESC
     if not os.path.exists(t1_dst_folder):
         os.makedirs(t1_dst_folder)
     if not os.path.exists(t2_dst_folder):
         os.makedirs(t2_dst_folder)
     for file in csv.iloc[:, 0]:
-        src_path = os.path.join("D:\\08_Dataset\\Internal\\mar2020\\pickle_files\\", file)
+        src_path = os.path.join('/home/aduraira/projects/def-wangk/aduraira/pickle_files/', file)
         with open(src_path, 'rb') as f:
             t1_pkl = {}
             t2_pkl = {}
