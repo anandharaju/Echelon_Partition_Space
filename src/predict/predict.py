@@ -353,43 +353,52 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
     test_m1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None)
     predict_t1_test_data.xM1, predict_t1_test_data.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
 
-    test_b1_partition_count = partition_pkl_files("b1_test", fold_index, test_b1datadf.iloc[:, 0])
+    test_b1_partition_count = partition_pkl_files("b1_test", fold_index, test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1])
 
-    for pcount in range(0, test_b1_partition_count):
-        b1_tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "b1_test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+    # TIER-2 PREDICTION
+    print("Prediction on Testing Data - TIER2 [B1 data]")  # \t\t\tSection Map Length:", len(section_map))
+    predict_t2_test_data_all = pObj(cnst.TIER2, None, None, None)
 
-        # TIER-2 PREDICTION
-        if thd2 is not None and q_sections is not None:
-            print("Prediction on Testing Data - TIER2 [B1 data]")  # \t\t\tSection Map Length:", len(section_map))
-            predict_t2_test_data = pObj(cnst.TIER2, None, b1_tst_datadf.iloc[:, 0], b1_tst_datadf.iloc[:, 1])  # predict_t1_test_data.xB1, predict_t1_test_data.yB1)
-            predict_t2_test_data.thd = thd2
-            predict_t2_test_data.q_sections = q_sections
-            predict_t2_test_data.predict_section_map = section_map
-            predict_t2_test_data.wpartition = get_partition_data("b1_test", fold_index, pcount, "t1")
-            predict_t2_test_data.spartition = get_partition_data("b1_test", fold_index, pcount, "t2")
-            predict_t2_test_data = predict_tier2(model_idx, predict_t2_test_data, fold_index)
+    if thd2 is not None and q_sections is not None:
+        for pcount in range(0, test_b1_partition_count):
+            b1_tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "b1_test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+
+            predict_t2_test_data_partition = pObj(cnst.TIER2, None, b1_tst_datadf.iloc[:, 0], b1_tst_datadf.iloc[:, 1])  # predict_t1_test_data.xB1, predict_t1_test_data.yB1)
+            predict_t2_test_data_partition.thd = thd2
+            predict_t2_test_data_partition.q_sections = q_sections
+            predict_t2_test_data_partition.predict_section_map = section_map
+            predict_t2_test_data_partition.wpartition = get_partition_data("b1_test", fold_index, pcount, "t1")
+            predict_t2_test_data_partition.spartition = get_partition_data("b1_test", fold_index, pcount, "t2")
+            predict_t2_test_data_partition = predict_tier2(model_idx, predict_t2_test_data_partition, fold_index)
 
             print("Initiating garbage collection")
-            del predict_t2_test_data.wpartition  # Release Memory
-            del predict_t2_test_data.spartition  # Release Memory
+            del predict_t2_test_data_partition.wpartition  # Release Memory
+            del predict_t2_test_data_partition.spartition  # Release Memory
             gc.collect()
             print("Completed garbage collection")
 
-        display_probability_chart(predict_t2_test_data.ytrue, predict_t2_test_data.yprob, predict_t2_test_data.thd, "TESTING_TIER2_PROB_PLOT_" + str(fold_index+1))
-        print("List of TPs found: ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
-        print("List of New FPs  : ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])
+            predict_t2_test_data_all.xtrue = predict_t2_test_data_partition.xtrue if predict_t2_test_data_all.xtrue is None else pd.concat([predict_t2_test_data_all.xtrue, predict_t2_test_data_partition.xtrue], axis=1)
+            predict_t2_test_data_all.ytrue = predict_t2_test_data_partition.ytrue if predict_t2_test_data_all.ytrue is None else pd.concat([predict_t2_test_data_all.ytrue, predict_t2_test_data_partition.ytrue], axis=1)
+            predict_t2_test_data_all.yprob = predict_t2_test_data_partition.yprob if predict_t2_test_data_all.yprob is None else pd.concat([predict_t2_test_data_all.yprob, predict_t2_test_data_partition.yprob], axis=1)
+            predict_t2_test_data_all.ypred = predict_t2_test_data_partition.ypred if predict_t2_test_data_all.ypred is None else pd.concat([predict_t2_test_data_all.ypred, predict_t2_test_data_partition.ypred], axis=1)
+
+            print(predict_t2_test_data_all.ytrue.shape)
+
+        display_probability_chart(predict_t2_test_data_all.ytrue, predict_t2_test_data_all.yprob, predict_t2_test_data_all.thd, "TESTING_TIER2_PROB_PLOT_" + str(fold_index+1))
+        print("List of TPs found: ", predict_t2_test_data_all.xtrue[np.all([predict_t2_test_data_all.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data_all.ypred.ravel() == cnst.MALWARE], axis=0)])
+        print("List of New FPs  : ", predict_t2_test_data_all.xtrue[np.all([predict_t2_test_data_all.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data_all.ypred.ravel() == cnst.MALWARE], axis=0)])
     
         # RECONCILIATION OF PREDICTION RESULTS FROM TIER - 1&2
-        still_benign_indices = np.where(np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.BENIGN], axis=0))[0]
-        predict_t2_test_data.yprob[still_benign_indices] = predict_t1_test_data.yprobB1[still_benign_indices]  # Assign Tier-1 probabilities for samples that are still benign to avoid AUC conflict
+        still_benign_indices = np.where(np.all([predict_t2_test_data_all.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data_all.ypred.ravel() == cnst.BENIGN], axis=0))[0]
+        predict_t2_test_data_all.yprob[still_benign_indices] = predict_t1_test_data.yprobB1[still_benign_indices]  # Assign Tier-1 probabilities for samples that are still benign to avoid AUC conflict
 
-        new_tp_indices = np.where(np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0))[0]
-        predict_t2_test_data.yprob[new_tp_indices] -= predict_t2_test_data.yprob[new_tp_indices] + 1
+        new_tp_indices = np.where(np.all([predict_t2_test_data_all.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data_all.ypred.ravel() == cnst.MALWARE], axis=0))[0]
+        predict_t2_test_data_all.yprob[new_tp_indices] -= predict_t2_test_data_all.yprob[new_tp_indices] + 1
 
-        new_fp_indices = np.where(np.all([predict_t2_test_data.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0))[0]
-        predict_t2_test_data.yprob[new_fp_indices] -= predict_t2_test_data.yprob[new_fp_indices]
+        new_fp_indices = np.where(np.all([predict_t2_test_data_all.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data_all.ypred.ravel() == cnst.MALWARE], axis=0))[0]
+        predict_t2_test_data_all.yprob[new_fp_indices] -= predict_t2_test_data_all.yprob[new_fp_indices]
 
-        cvobj, benchmark_fpr = reconcile(predict_t1_test_data, predict_t2_test_data, cv_obj, fold_index)
+        cvobj, benchmark_fpr = reconcile(predict_t1_test_data, predict_t2_test_data_all, cv_obj, fold_index)
         # benchmark_tier1(model_idx, predict_t1_test_data, fold_index, benchmark_fpr)
         return cvobj
     else:

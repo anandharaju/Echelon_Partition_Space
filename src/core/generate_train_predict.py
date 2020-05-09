@@ -83,9 +83,7 @@ def train_predict(model_idx, dataset_path=None):
             tst_count = partition_pkl_files("test",  fold_index, testdata.xdf.values, testdata.ydf.values)
             pd.DataFrame([{"train": trn_count, "val": val_count, "test": tst_count}]).to_csv(os.path.join(cnst.DATA_SOURCE_PATH, "partition_tracker_" + str(fold_index) + ".csv"), index=False)
 
-        # thd1, boosting_upper_bound, thd2, q_sections, section_map = \
-        train.init(model_idx, traindata, valdata, fold_index)
-        continue
+        thd1, boosting_upper_bound, thd2, q_sections, section_map = train.init(model_idx, traindata, valdata, fold_index)
 
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************", "THD1", thd1, "THD2", thd2, "Boosting Bound", boosting_upper_bound)
         pred_cv_obj = predict.init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, testdata, cv_obj, fold_index)

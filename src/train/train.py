@@ -376,7 +376,7 @@ def init(model_idx, traindata, valdata, fold_index):
         print("FPR: {:6.2f}".format(predict_t2_val_data.fpr), "TPR: {:6.2f}".format(predict_t2_val_data.tpr), "\tTHD2: {:6.2f}".format(predict_t2_val_data.thd))
 
         curdiff = predict_t2_val_data.tpr - predict_t2_val_data.fpr
-        if curdiff != 0 and curdiff > maxdiff:
+        if True:  # curdiff != 0 and curdiff > maxdiff:
             maxdiff = curdiff
 
             q_criterion_selected = q_criterion
