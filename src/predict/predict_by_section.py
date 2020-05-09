@@ -22,18 +22,19 @@ parser.add_argument('--target_confidence', type=int, default=70)
 parser.add_argument('--csv', type=str, default=None)
 
 
-def predict_by_section(partition, sections, model, fn_list, label, batch_size, verbose):
+'''
+def predict_by_section(wpartition, spartition, sections, model, fn_list, label, batch_size, verbose):
     max_len = 0
     if len(sections) == 1:
         max_len = model.input.shape[1]
     else:
         max_len = model.input[0].shape[1]
     pred = model.predict_generator(
-        utils.data_generator_by_section(partition, sections, fn_list, label, max_len, batch_size, shuffle=False),
+        utils.data_generator_by_section(wpartition, spartition, sections, fn_list, label, max_len, batch_size, shuffle=False),
         steps=len(fn_list) // batch_size + 1,
         verbose=verbose
     )
-    return pred
+    return pred'''
 
 
 def trigger_predict_by_section():

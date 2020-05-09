@@ -25,11 +25,11 @@ def predict_byte(model, partition, xfiles, args):
     return pred
 
 
-def predict_byte_by_section(model, partition, xfiles, q_sections, section_map, args):
+def predict_byte_by_section(model, wpartition, spartition, xfiles, q_sections, section_map, args):
     xlen = len(xfiles)
     pred_steps = xlen//args.batch_size if xlen % args.batch_size == 0 else xlen//args.batch_size + 1
     pred = model.predict_generator(
-        utils.data_generator_by_section(partition, q_sections, section_map, xfiles, np.ones(xfiles.shape), args.max_len, args.batch_size, shuffle=False),
+        utils.data_generator_by_section(wpartition, spartition, q_sections, section_map, xfiles, np.ones(xfiles.shape), args.max_len, args.batch_size, shuffle=False),
         steps=pred_steps,
         verbose=args.verbose
         )
@@ -176,7 +176,7 @@ def predict_tier2(model_idx, pobj, fold_index):
 
     if cnst.EXECUTION_TYPE[model_idx] == cnst.BYTE:
         # pbs.trigger_predict_by_section()
-        pobj.yprob = predict_byte_by_section(tier2_model, pobj.partition, pobj.xtrue, pobj.q_sections, pobj.predict_section_map, predict_args)
+        pobj.yprob = predict_byte_by_section(tier2_model, pobj.wpartition, pobj.spartition, pobj.xtrue, pobj.q_sections, pobj.predict_section_map, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FEATURISTIC:
         pobj.yprob = predict_by_features(tier2_model, pobj.xtrue, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FUSION:
@@ -321,46 +321,59 @@ def benchmark_tier1(model_idx, ptier1, fold_index, recon_fpr):
 def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, testdata, cv_obj, fold_index):
     # TIER-1 PREDICTION OVER TEST DATA
     print("\nPrediction on Testing Data - TIER1")
-    predict_t1_test_data = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
-    predict_t1_test_data.thd = thd1
-    predict_t1_test_data.boosting_upper_bound = boosting_upper_bound
-    predict_t1_test_data.partition = get_partition_data("test", fold_index)
-    predict_t1_test_data = predict_tier1(model_idx, predict_t1_test_data, fold_index)
 
-    print("Initiating garbage collection")
-    del predict_t1_test_data.partition  # Release Memory
-    gc.collect()
-    print("Completed garbage collection")
+    partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + "partition_tracker_" + str(fold_index) + ".csv")
+    pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    for pcount in range(0, partition_tracker_df["test"][0]):
+        tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+        testdata.xdf, testdata.ydf = tst_datadf.iloc[:, 0], tst_datadf.iloc[:, 1]
 
-    # print("TPR:", predict_t1_test_data.tpr, "FPR:", predict_t1_test_data.fpr)
-    # plots.plot_auc(ytrain, pred_proba1, thd1, "tier1")
+        predict_t1_test_data = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
+        predict_t1_test_data.thd = thd1
+        predict_t1_test_data.boosting_upper_bound = boosting_upper_bound
+        predict_t1_test_data.partition = get_partition_data("test", fold_index, pcount, "t1")
+        predict_t1_test_data = predict_tier1(model_idx, predict_t1_test_data, fold_index)
 
-    test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xB1), pd.DataFrame(predict_t1_test_data.yB1), pd.DataFrame(predict_t1_test_data.yprobB1)], axis=1)
-    test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
-    test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xM1), pd.DataFrame(predict_t1_test_data.yM1), pd.DataFrame(predict_t1_test_data.yprobM1)], axis=1)
-    test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+        print("Initiating garbage collection")
+        del predict_t1_test_data.partition  # Release Memory
+        gc.collect()
+        print("Completed garbage collection")
 
-    partition_pkl_files("b1_test", fold_index, test_b1datadf.iloc[:, 0])
+        # print("TPR:", predict_t1_test_data.tpr, "FPR:", predict_t1_test_data.fpr)
+        # plots.plot_auc(ytrain, pred_proba1, thd1, "tier1")
+
+        test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xB1), pd.DataFrame(predict_t1_test_data.yB1), pd.DataFrame(predict_t1_test_data.yprobB1)], axis=1)
+        test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
+        test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xM1), pd.DataFrame(predict_t1_test_data.yM1), pd.DataFrame(predict_t1_test_data.yprobM1)], axis=1)
+        test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
 
     test_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None)
     predict_t1_test_data.xB1, predict_t1_test_data.yB1 = test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1]
     test_m1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None)
     predict_t1_test_data.xM1, predict_t1_test_data.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
 
-    # TIER-2 PREDICTION
-    if thd2 is not None and q_sections is not None:
-        print("Prediction on Testing Data - TIER2 [B1 data]")  # \t\t\tSection Map Length:", len(section_map))
-        predict_t2_test_data = pObj(cnst.TIER2, None, predict_t1_test_data.xB1, predict_t1_test_data.yB1)
-        predict_t2_test_data.thd = thd2
-        predict_t2_test_data.q_sections = q_sections
-        predict_t2_test_data.predict_section_map = section_map
-        predict_t2_test_data.partition = get_partition_data("b1_test", fold_index)
-        predict_t2_test_data = predict_tier2(model_idx, predict_t2_test_data, fold_index)
+    test_b1_partition_count = partition_pkl_files("b1_test", fold_index, test_b1datadf.iloc[:, 0])
 
-        print("Initiating garbage collection")
-        del predict_t2_test_data.partition  # Release Memory
-        gc.collect()
-        print("Completed garbage collection")
+    for pcount in range(0, test_b1_partition_count):
+        b1_tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "b1_test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+
+        # TIER-2 PREDICTION
+        if thd2 is not None and q_sections is not None:
+            print("Prediction on Testing Data - TIER2 [B1 data]")  # \t\t\tSection Map Length:", len(section_map))
+            predict_t2_test_data = pObj(cnst.TIER2, None, b1_tst_datadf.iloc[:, 0], b1_tst_datadf.iloc[:, 1])  # predict_t1_test_data.xB1, predict_t1_test_data.yB1)
+            predict_t2_test_data.thd = thd2
+            predict_t2_test_data.q_sections = q_sections
+            predict_t2_test_data.predict_section_map = section_map
+            predict_t2_test_data.wpartition = get_partition_data("b1_test", fold_index, pcount, "t1")
+            predict_t2_test_data.spartition = get_partition_data("b1_test", fold_index, pcount, "t2")
+            predict_t2_test_data = predict_tier2(model_idx, predict_t2_test_data, fold_index)
+
+            print("Initiating garbage collection")
+            del predict_t2_test_data.wpartition  # Release Memory
+            del predict_t2_test_data.spartition  # Release Memory
+            gc.collect()
+            print("Completed garbage collection")
 
         display_probability_chart(predict_t2_test_data.ytrue, predict_t2_test_data.yprob, predict_t2_test_data.thd, "TESTING_TIER2_PROB_PLOT_" + str(fold_index+1))
         print("List of TPs found: ", predict_t2_test_data.xtrue[np.all([predict_t2_test_data.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data.ypred.ravel() == cnst.MALWARE], axis=0)])

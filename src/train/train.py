@@ -80,7 +80,7 @@ def train_by_section(args):
     # Check MAX_LEN modification is needed - based on proportion of section vs whole file size
     # args.max_len = cnst.MAX_FILE_SIZE_LIMIT + (cnst.CONV_WINDOW_SIZE * len(args.q_sections))
     history = args.t2_model_base.fit_generator(
-        utils.data_generator_by_section(args.b1_train_partition, args.q_sections, args.train_section_map, args.t2_x_train, args.t2_y_train, args.t2_max_len, args.t2_batch_size, args.t2_shuffle),
+        utils.data_generator_by_section(args.whole_b1_train_partition, args.section_b1_train_partition, args.q_sections, args.train_section_map, args.t2_x_train, args.t2_y_train, args.t2_max_len, args.t2_batch_size, args.t2_shuffle),
         class_weight=args.t2_class_weights,
         steps_per_epoch=len(args.t2_x_train)//args.t2_batch_size + 1,
         epochs=args.t2_epochs,
@@ -225,8 +225,8 @@ def init(model_idx, traindata, valdata, fold_index):
     # print("######################################   TRAINING TIER-1  ###############################################")
     partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + "partition_tracker_" + str(fold_index) + ".csv")
     for pcount in range(0, partition_tracker_df["train"][0]):
-        datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "train_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
-        traindata.xdf, traindata.ydf = datadf.iloc[:, 0], datadf.iloc[:, 1]
+        tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "train_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
+        traindata.xdf, traindata.ydf = tr_datadf.iloc[:, 0], tr_datadf.iloc[:, 1]
 
         t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = traindata.xdf.values, None, traindata.ydf.values, None
         t_args.t1_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t1_y_train), t_args.t1_y_train)  # Class Imbalance Tackling - Setting class weights
@@ -247,39 +247,61 @@ def init(model_idx, traindata, valdata, fold_index):
 
     # TIER-1 PREDICTION OVER TRAINING DATA [Select THD1]
     print("*** Prediction over Validation data in TIER-1 to select THD1 and Boosting Bound")
-    predict_t1_val_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, valdata.xdf.values, valdata.ydf.values)
-    predict_t1_val_data.partition = get_partition_data("val", fold_index, 0, "t1")
-    predict_t1_val_data = predict.predict_tier1(model_idx, predict_t1_val_data, fold_index)
-    print("Initiating garbage collection")
-    del predict_t1_val_data.partition  # Release Memory
-    gc.collect()
-    print("Completed garbage collection")
+    pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_" + str(fold_index) + "_pkl.csv", header=None, index=None)
 
-    val_b1datadf = pd.concat([pd.DataFrame(predict_t1_val_data.xB1), pd.DataFrame(predict_t1_val_data.yB1)], axis=1)
-    val_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    min_boosting_bound = None
+    max_thd1 = None
+    for pcount in range(0, partition_tracker_df["val"][0]):
+        val_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "val_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
+        valdata.xdf, valdata.ydf = val_datadf.iloc[:, 0], val_datadf.iloc[:, 1]
+        predict_t1_val_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, valdata.xdf.values, valdata.ydf.values)
+        predict_t1_val_data.partition = get_partition_data("val", fold_index, pcount, "t1")
+        predict_t1_val_data = predict.predict_tier1(model_idx, predict_t1_val_data, fold_index)
 
-    partition_pkl_files("b1_val", fold_index, val_b1datadf.iloc[:, 0], val_b1datadf.iloc[:, 1])
+        min_boosting_bound = predict_t1_val_data.boosting_upper_bound if min_boosting_bound is None else np.min(min_boosting_bound, predict_t1_val_data.boosting_upper_bound)
+        max_thd1 = predict_t1_val_data.thd if max_thd1 is None else np.max(max_thd1, predict_t1_val_data.thd)
+
+        print("Initiating garbage collection")
+        del predict_t1_val_data.partition  # Release Memory
+        gc.collect()
+        print("Completed garbage collection")
+
+        val_b1datadf = pd.concat([pd.DataFrame(predict_t1_val_data.xB1), pd.DataFrame(predict_t1_val_data.yB1)], axis=1)
+        val_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
+
+    val_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None)
+    b1val_partition_count = partition_pkl_files("b1_val", fold_index, val_b1datadf.iloc[:, 0], val_b1datadf.iloc[:, 1])
 
     print("\n*** Prediction over Training data in TIER-1 to generate B1 data for TIER-2 Training")
-    predict_t1_train_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, traindata.xdf.values, traindata.ydf.values)
-    predict_t1_train_data.thd = predict_t1_val_data.thd
-    predict_t1_train_data.boosting_upper_bound = predict_t1_val_data.boosting_upper_bound
-    predict_t1_train_data.partition = get_partition_data("train", fold_index, 0, "t1")
-    predict_t1_train_data = predict.predict_tier1(model_idx, predict_t1_train_data, fold_index)
-    print("Initiating garbage collection")
-    del predict_t1_train_data.partition  # Release Memory
-    gc.collect()
-    print("Completed garbage collection")
+    pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None, index=None)
 
-    train_b1datadf = pd.concat([pd.DataFrame(predict_t1_train_data.xB1), pd.DataFrame(predict_t1_train_data.yB1)], axis=1)
-    train_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+    predict_t1_val_data.thd = max_thd1
+    predict_t1_val_data.boosting_upper_bound = min_boosting_bound
 
-    partition_pkl_files("b1_train", fold_index, train_b1datadf.iloc[:, 0], train_b1datadf.iloc[:, 1])
+    for pcount in range(0, partition_tracker_df["train"][0]):
+        tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+        traindata.xdf, traindata.ydf = tr_datadf.iloc[:, 0], tr_datadf.iloc[:, 1]
+
+        predict_t1_train_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, traindata.xdf.values, traindata.ydf.values)
+        predict_t1_train_data.thd = predict_t1_val_data.thd
+        predict_t1_train_data.boosting_upper_bound = predict_t1_val_data.boosting_upper_bound
+        predict_t1_train_data.partition = get_partition_data("train", fold_index, pcount, "t1")
+        predict_t1_train_data = predict.predict_tier1(model_idx, predict_t1_train_data, fold_index)
+        print("Initiating garbage collection")
+        del predict_t1_train_data.partition  # Release Memory
+        gc.collect()
+        print("Completed garbage collection")
+
+        train_b1datadf = pd.concat([pd.DataFrame(predict_t1_train_data.xB1), pd.DataFrame(predict_t1_train_data.yB1)], axis=1)
+        train_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None, index=None, mode='a')
 
     print("Loading stored B1 Data from Training set to train Tier-2 model")
     train_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_"+str(fold_index)+"_pkl.csv", header=None)  # xxs.csv
     t_args.t2_x_train, t_args.t2_y_train = train_b1datadf.iloc[:, 0], train_b1datadf.iloc[:, 1]
-    t_args.b1_train_partition = get_partition_data("b1_train", fold_index, 0, "t2")
+
+    b1tr_partition_count = partition_pkl_files("b1_train", fold_index, train_b1datadf.iloc[:, 0], train_b1datadf.iloc[:, 1])
+    t_args.whole_b1_train_partition = get_partition_data("b1_train", fold_index, 0, "t1")
+    t_args.section_b1_train_partition = get_partition_data("b1_train", fold_index, 0, "t2")
 
     # ATI PROCESS - SELECTING QUALIFIED_SECTIONS - ### Pass B1 data
     if not cnst.SKIP_ATI_PROCESSING:
@@ -318,7 +340,8 @@ def init(model_idx, traindata, valdata, fold_index):
     print("Loading stored B1 Data from Validation set for THD2 selection")
     val_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None)  # xxs.csv
     predict_t2_val_data = pObj(cnst.TIER2, t2_fpr, val_b1datadf.iloc[:, 0], val_b1datadf.iloc[:, 1])
-    predict_t2_val_data.partition = get_partition_data("b1_val", fold_index, 0, "t2")
+    predict_t2_val_data.wpartition = get_partition_data("b1_val", fold_index, 0, "t1")
+    predict_t2_val_data.spartition = get_partition_data("b1_val", fold_index, 0, "t2")
 
     thd2 = 0
     maxdiff = 0
@@ -342,6 +365,8 @@ def init(model_idx, traindata, valdata, fold_index):
         # Retrieve TPR at FPR=0 or relax till 1%
         if not cnst.SKIP_TIER2_TRAINING:
             train_tier2(t_args)
+
+        cnst.USE_PRETRAINED_FOR_TIER2 = False
 
         # predict_t2_train_data.thd = None
         # predict_t2_train_data = predict.predict_tier2(model_idx, predict_t2_train_data, fold_index)
@@ -382,8 +407,10 @@ def init(model_idx, traindata, valdata, fold_index):
     print("\n\tBest Q_Criterion:", q_criterion_selected, "Related Q_Sections:", q_sections_selected)
 
     print("Initiating garbage collection")
-    del t_args.b1_train_partition  # Release Memory
-    del predict_t2_val_data.partition  # Release Memory
+    del t_args.whole_b1_train_partition  # Release Memory
+    del t_args.section_b1_train_partition  # Release Memory
+    del predict_t2_val_data.wpartition  # Release Memory
+    del predict_t2_val_data.spartition  # Release Memory
     gc.collect()
     print("Completed garbage collection")
 

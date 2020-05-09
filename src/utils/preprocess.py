@@ -32,7 +32,7 @@ def preprocess(partition, file_list, max_len):
     return seq, len_list
 
 
-def preprocess_by_section(partition, file_list, max_len, sections, section_map):
+def preprocess_by_section(wpartition, spartition, file_list, max_len, sections, section_map):
     '''
     Return processed data (ndarray) and original section length (list)
     '''
@@ -41,14 +41,14 @@ def preprocess_by_section(partition, file_list, max_len, sections, section_map):
 
     corpus = []
     # section_byte_map = OrderedDict.fromkeys(section_map, value=0)
-    pkeys = partition.keys()
+    pkeys = spartition.keys()
     for fn in file_list:
         fn = fn[:-4]
         if fn not in pkeys:
             print(fn, 'not exists in partition')
         else:
             combined = []
-            fjson = partition[fn]
+            fjson = spartition[fn]
             try:
                 keys = fjson["section_info"].keys()
                 '''
@@ -73,14 +73,15 @@ def preprocess_by_section(partition, file_list, max_len, sections, section_map):
                             [combined, fjson["section_info"][section]["section_data"], np.zeros(cnst.CONV_WINDOW_SIZE)])
 
                 if cnst.TAIL in sections:
-                    fsize = len(fjson["whole_bytes"])
+                    whole_bytes = wpartition[fn]["whole_bytes"]
+                    fsize = len(whole_bytes)
                     sections_end = 0
                     for key in keys:
                         if fjson["section_info"][key]['section_bounds']["end_offset"] > sections_end:
                             sections_end = fjson["section_info"][key]['section_bounds']["end_offset"]
                     if sections_end < fsize - 1:
                         combined = np.concatenate(
-                            [combined, fjson["whole_bytes"][sections_end:fsize], np.zeros(cnst.CONV_WINDOW_SIZE)])
+                            [combined, whole_bytes[sections_end:fsize], np.zeros(cnst.CONV_WINDOW_SIZE)])
 
                 corpus.append(combined)
                 if len(combined) > max_len:

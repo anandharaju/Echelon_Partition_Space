@@ -39,9 +39,10 @@ def data_generator(partition, data, labels, max_len, batch_size, shuffle):
                 yield (xx, yy)
             except Exception as e:
                 print(str(e), "TIER-1 Error during PRE-PROCESSING . . . ")  # [", labels[i], data[i], "]")
+                exit()
 
 
-def data_generator_by_section(partition, sections, section_map, data, labels, max_len, batch_size, shuffle):
+def data_generator_by_section(wpartition, spartition, sections, section_map, data, labels, max_len, batch_size, shuffle):
     idx = np.arange(len(data))
     if shuffle:
         np.random.shuffle(idx)
@@ -49,7 +50,7 @@ def data_generator_by_section(partition, sections, section_map, data, labels, ma
     while True:
         for i in batches:
             try:
-                xx = preprocess_by_section(partition, data[i], max_len, sections, section_map)[0]
+                xx = preprocess_by_section(wpartition, spartition, data[i], max_len, sections, section_map)[0]
                 yy = labels[i]
                 yield (xx, yy)
             except Exception as e:

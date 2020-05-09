@@ -1,7 +1,7 @@
 import os
 
 RESUME = True
-LINUX_ENV = True
+LINUX_ENV = False
 ESC = "/" if LINUX_ENV else "\\"
 # 42 :Answer to the Ultimate Question of Life, the Universe, and Everything
 # ~ The Hitchhiker's Guide to the Galaxy
@@ -24,7 +24,7 @@ ATI_PREDICT_VERBOSE = VERBOSE_0
 #####################################################################################
 USE_GPU = False
 REGENERATE_DATA = False
-REGENERATE_PARTITION = True
+REGENERATE_PARTITION = False
 DO_SUBSAMPLING = False
 
 PROJECT_ROOT = os.getcwdb().decode("utf-8").split("/")[-2] if LINUX_ENV else os.getcwdb().decode("utf-8").split("\\")[-2]
@@ -38,7 +38,7 @@ EPOCHS = 1
 TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
 TIER1_TARGET_FPR = 0.1
-SKIP_TIER1_TRAINING = False
+SKIP_TIER1_TRAINING = True
 SKIP_TIER2_TRAINING = False
 SKIP_ATI_PROCESSING = False
 
@@ -66,8 +66,8 @@ MAX_FILE_CONVOLUTED_SIZE = int(MAX_FILE_SIZE_LIMIT / CONV_STRIDE_SIZE)
 USE_POOLING_LAYER = True
 PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/' + PROJECT_ROOT if LINUX_ENV else 'D:\\03_GitWorks\\'+PROJECT_ROOT
 DATA_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/partitions/' + PROJECT_ROOT if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\partitions\\xs_partition\\'
-PKL_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/pickles/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\partitions\\xs_partition\\'
-ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'ds1_pkl_unique.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
+PKL_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/pickles/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\pickles\\'
+ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'xs_pkl.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
 BENIGN_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_benign_pkl.csv'
 MALWARE_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_malware_pkl.csv'
 TRAINING_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'training.csv'

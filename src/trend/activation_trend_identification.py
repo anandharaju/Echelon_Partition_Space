@@ -40,29 +40,27 @@ def find_qualified_sections(sd, trend, common_trend, support):
     return q_sections_by_q_criteria
 
 
-def parse_pe_pkl(file_id, file, unprocessed):
+def parse_pe_pkl(file_index, file_id, fjson, unprocessed):
     section_bounds = []
     file_byte_size = None
     max_section_end_offset = 0
     try:
-        with open(file, 'rb') as pkl:
-            fjson = pickle.load(pkl)
-            file_byte_size = fjson['size_byte']
-            pkl_sections = fjson["section_info"].keys()
-            for pkl_section in pkl_sections:
-                section_bounds.append(
-                    (pkl_section,
-                     fjson["section_info"][pkl_section]["section_bounds"]["start_offset"],
-                     fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]))
-                if fjson["section_info"][pkl_section]["section_bounds"]["end_offset"] > max_section_end_offset:
-                    max_section_end_offset = fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]
+        file_byte_size = fjson['size_byte']
+        pkl_sections = fjson["section_info"].keys()
+        for pkl_section in pkl_sections:
+            section_bounds.append(
+                (pkl_section,
+                 fjson["section_info"][pkl_section]["section_bounds"]["start_offset"],
+                 fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]))
+            if fjson["section_info"][pkl_section]["section_bounds"]["end_offset"] > max_section_end_offset:
+                max_section_end_offset = fjson["section_info"][pkl_section]["section_bounds"]["end_offset"]
 
-            # Placeholder section "padding" - for activations in padding region
-            if max_section_end_offset < fjson["size_byte"]:
-                section_bounds.append((cnst.TAIL, max_section_end_offset + 1, fjson["size_byte"]))
-            section_bounds.append((cnst.PADDING, fjson["size_byte"] + 1, cnst.MAX_FILE_SIZE_LIMIT))
+        # Placeholder section "padding" - for activations in padding region
+        if max_section_end_offset < fjson["size_byte"]:
+            section_bounds.append((cnst.TAIL, max_section_end_offset + 1, fjson["size_byte"]))
+        section_bounds.append((cnst.PADDING, fjson["size_byte"] + 1, cnst.MAX_FILE_SIZE_LIMIT))
     except Exception as e:
-        print("parse failed . . . [FILE ID - ", file_id, "]  [", file, "] ", e)
+        print("parse failed . . . [FILE INDEX - ", file_index, "]  [", file_id, "] ", e)
         unprocessed += 1
     return section_bounds, unprocessed, file_byte_size
 
@@ -187,9 +185,11 @@ def process_files(args):
             print(file, " does not exist. Skipping . . .")
             unprocessed += 1
             continue
-        section_bounds, unprocessed, fsize = parse_pe_pkl(i, cnst.DATA_SOURCE_PATH + file, unprocessed)
-        file_part = {file[:-4]: args.b1_train_partition[file[:-4]]}
-        raw_feature_map = get_feature_map(stunted_model, file_part, file)
+
+        section_bounds, unprocessed, fsize = parse_pe_pkl(i, file[:-4], args.section_b1_train_partition[file[:-4]], unprocessed)
+
+        file_whole_bytes = {file[:-4]: args.whole_b1_train_partition[file[:-4]]}
+        raw_feature_map = get_feature_map(stunted_model, file_whole_bytes, file)
         # if len(np.shape(raw_feature_map)) == 1:
         #    feature_map = raw_feature_map.ravel()
         # else:
