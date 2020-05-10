@@ -71,7 +71,7 @@ def partition_pkl_files(type, fold, files, labels):
 def get_partition_data(type, fold, partition_count, tier):
     partition_label = type + "_" + str(fold) + "_" + tier + "_p" + str(partition_count)
     print("Loading partitioned data for Fold-"+str(fold+1)+". . .", partition_label)
-    partition_path = os.path.join(cnst.DATA_SOURCE_PATH + partition_label + ".pkl")
+    partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label + ".pkl")
 
     if not os.path.isfile(partition_path):
         print("Partition file ", partition_path, ' does not exist.')

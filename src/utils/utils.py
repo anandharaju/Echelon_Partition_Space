@@ -31,15 +31,17 @@ def data_generator(partition, data, labels, max_len, batch_size, shuffle):
     if shuffle:
         np.random.shuffle(idx)
     batches = [idx[range(batch_size*i, min(len(data), batch_size*(i+1)))] for i in range(len(data)//batch_size+1)]
-    while True:
-        for i in batches:
-            try:
-                xx = preprocess(partition, data[i], max_len)[0]
-                yy = labels[i]
-                yield (xx, yy)
-            except Exception as e:
-                print(str(e), "TIER-1 Error during PRE-PROCESSING . . . ")  # [", labels[i], data[i], "]")
-                exit()
+    if partition is not None:
+        while True:
+            for i in batches:
+                try:
+                    xx = preprocess(partition, data[i], max_len)[0]
+                    yy = labels[i]
+                    yield (xx, yy)
+                except Exception as e:
+                    print(str(e), "TIER-1 Error during PRE-PROCESSING . . . ")  # [", labels[i], data[i], "]")
+    else:
+        print("TIER1 : No partition supplied. Check if partition loaded correctly with correct path")
 
 
 def data_generator_by_section(wpartition, spartition, sections, section_map, data, labels, max_len, batch_size, shuffle):
@@ -47,14 +49,17 @@ def data_generator_by_section(wpartition, spartition, sections, section_map, dat
     if shuffle:
         np.random.shuffle(idx)
     batches = [idx[range(batch_size*i, min(len(data), batch_size*(i+1)))] for i in range(len(data)//batch_size+1)]
-    while True:
-        for i in batches:
-            try:
-                xx = preprocess_by_section(wpartition, spartition, data[i], max_len, sections, section_map)[0]
-                yy = labels[i]
-                yield (xx, yy)
-            except Exception as e:
-                print("TIER-2 Error during PRE-PROCESSING SECTIONS. . .   [", labels[i], data[i], "]", str(e))
+    if wpartition is not None and spartition is not None:
+        while True:
+            for i in batches:
+                try:
+                    xx = preprocess_by_section(wpartition, spartition, data[i], max_len, sections, section_map)[0]
+                    yy = labels[i]
+                    yield (xx, yy)
+                except Exception as e:
+                    print("TIER-2 Error during PRE-PROCESSING SECTIONS. . .   [", labels[i], data[i], "]", str(e))
+    else:
+        print("TIER2 : No partitions supplied. Check if partition loaded correctly with correct path")
 
 
 def data_generator_by_features(data, labels, batch_size, shuffle, drop_features=None):

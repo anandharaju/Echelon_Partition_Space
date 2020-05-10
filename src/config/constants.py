@@ -24,8 +24,8 @@ PREDICT_VERBOSE = VERBOSE_1
 ATI_PREDICT_VERBOSE = VERBOSE_0
 
 #####################################################################################
-USE_GPU = True
-REGENERATE_DATA = False
+USE_GPU = False
+REGENERATE_DATA = False 
 REGENERATE_PARTITION = False
 DO_SUBSAMPLING = False
 
@@ -58,7 +58,7 @@ INITIAL_FOLD = 0
 RANDOMIZE = False  # Set Random seed for True
 
 #  DATA SOURCE
-MAX_PARTITION_SIZE = 4 * 2 ** 30
+MAX_PARTITION_SIZE = 500 * 2 ** 20
 MAX_SECT_BYTE_MAP_SIZE = 2000
 MAX_FILE_SIZE_LIMIT = 2**20  # 204800
 MAX_FILE_COUNT_LIMIT = None
