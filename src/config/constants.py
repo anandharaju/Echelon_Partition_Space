@@ -1,7 +1,9 @@
 import os
+import sys
 
 RESUME = True
-LINUX_ENV = False
+print("Detected Platform:",sys.platform)
+LINUX_ENV = False if 'win' in sys.platform else True
 ESC = "/" if LINUX_ENV else "\\"
 # 42 :Answer to the Ultimate Question of Life, the Universe, and Everything
 # ~ The Hitchhiker's Guide to the Galaxy
@@ -39,7 +41,7 @@ TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
 TIER1_TARGET_FPR = 0.1
 SKIP_TIER1_TRAINING = True
-SKIP_TIER2_TRAINING = True
+SKIP_TIER2_TRAINING = False
 SKIP_ATI_PROCESSING = False
 
 # TIER-2
@@ -101,7 +103,7 @@ COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'resul
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'
 SECTION_SUPPORT = PROJECT_BASE_PATH + ESC + "out" + ESC + "result" + ESC + "section_support_by_samples.csv"
 
-TAIL = "TAIL"
+TAIL = "OVERLAY"
 PADDING = "PADDING"
 LEAK = "SECTIONLESS"
 

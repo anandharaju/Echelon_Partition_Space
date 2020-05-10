@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --account=def-wangk
-#SBATCH --time=20:00:00
-#SBATCH --job-name=DS1_DIV_E10
+#SBATCH --time=8:00:00
+#SBATCH --job-name=PDS1_BIDIV_1
 
 #SBATCH --cpus-per-task=8
 #SBATCH --cores-per-socket=8
-#SBATCH --gres=gpu:2
-#SBATCH --mem=8G
+#SBATCH --gres=gpu:p100:4
+#SBATCH --mem=64G
 
 #SBATCH -o /home/aduraira/projects/def-wangk/aduraira/cc_out/job%j.out
 #SBATCH -e /home/aduraira/projects/def-wangk/aduraira/cc_out/job%j.err
