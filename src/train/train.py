@@ -223,9 +223,9 @@ def init(model_idx, traindata, valdata, fold_index):
     t_args.t2_model_name = cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5"
 
     # print("######################################   TRAINING TIER-1  ###############################################")
-    partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + "partition_tracker_" + str(fold_index) + ".csv")
+    partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
     for pcount in range(0, partition_tracker_df["train"][0]):
-        tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "train_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
+        tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "train_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
         traindata.xdf, traindata.ydf = tr_datadf.iloc[:, 0], tr_datadf.iloc[:, 1]
 
         t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = traindata.xdf.values, None, traindata.ydf.values, None
@@ -252,7 +252,7 @@ def init(model_idx, traindata, valdata, fold_index):
     min_boosting_bound = None
     max_thd1 = None
     for pcount in range(0, partition_tracker_df["val"][0]):
-        val_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "val_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
+        val_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "val_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
         valdata.xdf, valdata.ydf = val_datadf.iloc[:, 0], val_datadf.iloc[:, 1]
         predict_t1_val_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, valdata.xdf.values, valdata.ydf.values)
         predict_t1_val_data.partition = get_partition_data("val", fold_index, pcount, "t1")
@@ -279,7 +279,7 @@ def init(model_idx, traindata, valdata, fold_index):
     predict_t1_val_data.boosting_upper_bound = min_boosting_bound
 
     for pcount in range(0, partition_tracker_df["train"][0]):
-        tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+        tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
         traindata.xdf, traindata.ydf = tr_datadf.iloc[:, 0], tr_datadf.iloc[:, 1]
 
         predict_t1_train_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, traindata.xdf.values, traindata.ydf.values)
@@ -376,7 +376,7 @@ def init(model_idx, traindata, valdata, fold_index):
         print("FPR: {:6.2f}".format(predict_t2_val_data.fpr), "TPR: {:6.2f}".format(predict_t2_val_data.tpr), "\tTHD2: {:6.2f}".format(predict_t2_val_data.thd))
 
         curdiff = predict_t2_val_data.tpr - predict_t2_val_data.fpr
-        if True:  # curdiff != 0 and curdiff > maxdiff:
+        if curdiff != 0 and curdiff > maxdiff:
             maxdiff = curdiff
 
             q_criterion_selected = q_criterion

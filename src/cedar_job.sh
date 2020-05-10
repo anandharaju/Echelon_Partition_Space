@@ -5,8 +5,8 @@
 
 #SBATCH --cpus-per-task=8
 #SBATCH --cores-per-socket=8
-#SBATCH --gres=gpu:p100:4
-#SBATCH --mem=64G
+#SBATCH --gres=gpu:p100:1
+#SBATCH --mem=16G
 
 #SBATCH -o /home/aduraira/projects/def-wangk/aduraira/cc_out/job%j.out
 #SBATCH -e /home/aduraira/projects/def-wangk/aduraira/cc_out/job%j.err

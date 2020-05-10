@@ -24,7 +24,7 @@ PREDICT_VERBOSE = VERBOSE_1
 ATI_PREDICT_VERBOSE = VERBOSE_0
 
 #####################################################################################
-USE_GPU = False
+USE_GPU = True
 REGENERATE_DATA = False
 REGENERATE_PARTITION = False
 DO_SUBSAMPLING = False
@@ -40,7 +40,7 @@ EPOCHS = 1
 TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
 TIER1_TARGET_FPR = 0.1
-SKIP_TIER1_TRAINING = True
+SKIP_TIER1_TRAINING = False
 SKIP_TIER2_TRAINING = False
 SKIP_ATI_PROCESSING = False
 
@@ -58,7 +58,7 @@ INITIAL_FOLD = 0
 RANDOMIZE = False  # Set Random seed for True
 
 #  DATA SOURCE
-MAX_PARTITION_SIZE = 2 ** 30
+MAX_PARTITION_SIZE = 4 * 2 ** 30
 MAX_SECT_BYTE_MAP_SIZE = 2000
 MAX_FILE_SIZE_LIMIT = 2**20  # 204800
 MAX_FILE_COUNT_LIMIT = None
@@ -69,7 +69,7 @@ USE_POOLING_LAYER = True
 PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/' + PROJECT_ROOT if LINUX_ENV else 'D:\\03_GitWorks\\'+PROJECT_ROOT
 DATA_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/partitions/' + PROJECT_ROOT if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\partitions\\xs_partition\\'
 PKL_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/pickles/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\pickles\\'
-ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'xs_pkl.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
+ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'ds1_pkl.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
 BENIGN_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_benign_pkl.csv'
 MALWARE_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_malware_pkl.csv'
 TRAINING_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'training.csv'

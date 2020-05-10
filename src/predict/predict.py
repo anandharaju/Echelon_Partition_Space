@@ -322,11 +322,11 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
     # TIER-1 PREDICTION OVER TEST DATA
     print("\nPrediction on Testing Data - TIER1")
 
-    partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + "partition_tracker_" + str(fold_index) + ".csv")
+    partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
     pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
     pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
     for pcount in range(0, partition_tracker_df["test"][0]):
-        tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+        tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
         testdata.xdf, testdata.ydf = tst_datadf.iloc[:, 0], tst_datadf.iloc[:, 1]
 
         predict_t1_test_data = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
@@ -361,7 +361,7 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
 
     if thd2 is not None and q_sections is not None:
         for pcount in range(0, test_b1_partition_count):
-            b1_tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + "b1_test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+            b1_tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
 
             predict_t2_test_data_partition = pObj(cnst.TIER2, None, b1_tst_datadf.iloc[:, 0], b1_tst_datadf.iloc[:, 1])  # predict_t1_test_data.xB1, predict_t1_test_data.yB1)
             predict_t2_test_data_partition.thd = thd2
