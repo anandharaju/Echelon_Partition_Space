@@ -86,7 +86,13 @@ def train_predict(model_idx, dataset_path=None):
             tst_count = partition_pkl_files("test",  fold_index, testdata.xdf.values, testdata.ydf.values)
             pd.DataFrame([{"train": trn_count, "val": val_count, "test": tst_count}]).to_csv(os.path.join(cnst.DATA_SOURCE_PATH, "partition_tracker_" + str(fold_index) + ".csv"), index=False)
 
+            cpt = time.time()
+            print("\nTIME ELAPSED FOR GENERATING PARTITIONS:", str(int(cpt - tst) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
+        
         thd1, boosting_upper_bound, thd2, q_sections, section_map = train.init(model_idx, traindata, valdata, fold_index)
+
+        print("\nTIME ELAPSED FOR TRAINING:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
+        cpt = time.time()
 
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************", "THD1", thd1, "THD2", thd2, "Boosting Bound", boosting_upper_bound)
         pred_cv_obj = predict.init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, testdata, cv_obj, fold_index)
@@ -95,8 +101,11 @@ def train_predict(model_idx, dataset_path=None):
         else:
             print("Problem occurred during prediction phase of current fold. Proceeding to next fold . . .")
         print("**********************  PREDICTION TIER 1&2 - ENDED    ************************")
+        
+        print("\nTIME ELAPSED FOR PREDICTION:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
+
         tet = time.time() - tst
-        print("\nTIME ELAPSED :", str(int(tet) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
+        print("\nTOTAL TIME ELAPSED :", str(int(tet) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
         # return
 
         if cv_obj is not None:

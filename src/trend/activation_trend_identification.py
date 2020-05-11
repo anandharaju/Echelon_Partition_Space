@@ -181,10 +181,10 @@ def process_files(args):
         # print("File # ", i, "Max Activation Value:", max_activation_value)
         file = pObj_fmap.xtrue[i]
         file_type = pObj_fmap.ytrue[i]  # Using Ground Truth to get trend of actual benign and malware files
-        if not os.path.exists(cnst.DATA_SOURCE_PATH + file):
-            print(file, " does not exist. Skipping . . .")
-            unprocessed += 1
-            continue
+        #if not os.path.exists(cnst.DATA_SOURCE_PATH + file):
+        #    print(file, " does not exist. Skipping . . .")
+        #    unprocessed += 1
+        #    continue
 
         section_bounds, unprocessed, fsize = parse_pe_pkl(i, file[:-4], args.section_b1_train_partition[file[:-4]], unprocessed)
 

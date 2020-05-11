@@ -224,26 +224,24 @@ def init(model_idx, traindata, valdata, fold_index):
 
     # print("######################################   TRAINING TIER-1  ###############################################")
     partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
-    for pcount in range(0, partition_tracker_df["train"][0]):
-        tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "train_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
-        traindata.xdf, traindata.ydf = tr_datadf.iloc[:, 0], tr_datadf.iloc[:, 1]
-
-        t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = traindata.xdf.values, None, traindata.ydf.values, None
-        t_args.t1_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t1_y_train), t_args.t1_y_train)  # Class Imbalance Tackling - Setting class weights
-        t_args.t1_model_base = get_model1(t_args)
-
-        # ~~~~~~~~~~~~~~~~~~~
-        q_sections_by_q_criteria = {0: ['.header']}
-        if not cnst.SKIP_TIER1_TRAINING:
+    if not cnst.SKIP_TIER1_TRAINING:
+        for pcount in range(0, partition_tracker_df["train"][0]):
+            tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "train_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
+            traindata.xdf, traindata.ydf = tr_datadf.iloc[:, 0], tr_datadf.iloc[:, 1]
+            t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = traindata.xdf.values, None, traindata.ydf.values, None
+            t_args.t1_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t1_y_train), t_args.t1_y_train)  # Class Imbalance Tackling - Setting class weights
+            t_args.t1_model_base = get_model1(t_args)
+            
+            # ~~~~~~~~~~~~~~~~~~~
+            q_sections_by_q_criteria = {0: ['.header']}
             t_args.train_partition = get_partition_data("train", fold_index, pcount, "t1")
             train_tier1(t_args)
             print("Initiating garbage collection")
             del t_args.train_partition  # Release Memory
             gc.collect()
             print("Completed garbage collection")
-        # ~~~~~~~~~~~~~~~~~~~
-
-        cnst.USE_PRETRAINED_FOR_TIER1 = False
+            # ~~~~~~~~~~~~~~~~~~~
+            cnst.USE_PRETRAINED_FOR_TIER1 = False
 
     # TIER-1 PREDICTION OVER TRAINING DATA [Select THD1]
     print("*** Prediction over Validation data in TIER-1 to select THD1 and Boosting Bound")
@@ -258,8 +256,8 @@ def init(model_idx, traindata, valdata, fold_index):
         predict_t1_val_data.partition = get_partition_data("val", fold_index, pcount, "t1")
         predict_t1_val_data = predict.predict_tier1(model_idx, predict_t1_val_data, fold_index)
 
-        min_boosting_bound = predict_t1_val_data.boosting_upper_bound if min_boosting_bound is None else np.min(min_boosting_bound, predict_t1_val_data.boosting_upper_bound)
-        max_thd1 = predict_t1_val_data.thd if max_thd1 is None else np.max(max_thd1, predict_t1_val_data.thd)
+        min_boosting_bound = predict_t1_val_data.boosting_upper_bound if min_boosting_bound is None or predict_t1_val_data.boosting_upper_bound < min_boosting_bound else min_boosting_bound
+        max_thd1 = predict_t1_val_data.thd if max_thd1 is None or predict_t1_val_data.thd > max_thd1 else max_thd1
 
         print("Initiating garbage collection")
         del predict_t1_val_data.partition  # Release Memory
