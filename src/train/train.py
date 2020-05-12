@@ -269,6 +269,7 @@ def init(model_idx, traindata, valdata, fold_index):
 
     val_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None)
     b1val_partition_count = partition_pkl_files("b1_val", fold_index, val_b1datadf.iloc[:, 0], val_b1datadf.iloc[:, 1])
+    pd.DataFrame([{"thd1": max_thd1, "thd2": None, "boosting_bound": min_boosting_bound}]).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"), index=False)
 
     print("\n*** Prediction over Training data in TIER-1 to generate B1 data for TIER-2 Training")
     pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None, index=None)
@@ -414,7 +415,9 @@ def init(model_idx, traindata, valdata, fold_index):
 
     print("************************ TIER 2 TRAINING - ENDED   ****************************")
     # return None, None, thd2, q_sections_selected, t_args.train_section_map
-    return predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
+    pd.DataFrame([{"thd1": max_thd1, "thd2": thd2, "boosting_bound": min_boosting_bound}]).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"), index=False)
+    pd.DataFrame(q_sections_selected).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "qualified_sections_" + str(fold_index) + ".csv"), header=None, index=False)
+    return  # predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
 
 
 if __name__ == '__main__':

@@ -89,19 +89,18 @@ def train_predict(model_idx, dataset_path=None):
             cpt = time.time()
             print("\nTIME ELAPSED FOR GENERATING PARTITIONS:", str(int(cpt - tst) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
         
-        thd1, boosting_upper_bound, thd2, q_sections, section_map = train.init(model_idx, traindata, valdata, fold_index)
-
-        print("\nTIME ELAPSED FOR TRAINING:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
+        train.init(model_idx, traindata, valdata, fold_index)
         cpt = time.time()
+        print("\nTIME ELAPSED FOR TRAINING:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
 
-        print("**********************  PREDICTION TIER 1&2 - STARTED  ************************", "THD1", thd1, "THD2", thd2, "Boosting Bound", boosting_upper_bound)
-        pred_cv_obj = predict.init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, testdata, cv_obj, fold_index)
+        print("**********************  PREDICTION TIER 1&2 - STARTED  ************************")
+        pred_cv_obj = predict.init(model_idx, testdata, cv_obj, fold_index)
         if pred_cv_obj is not None:
             cv_obj = pred_cv_obj
         else:
             print("Problem occurred during prediction phase of current fold. Proceeding to next fold . . .")
         print("**********************  PREDICTION TIER 1&2 - ENDED    ************************")
-        
+        cpt = time.time()
         print("\nTIME ELAPSED FOR PREDICTION:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
 
         tet = time.time() - tst

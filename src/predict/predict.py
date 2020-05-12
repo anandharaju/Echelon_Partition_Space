@@ -12,6 +12,7 @@ import math
 from plots.plots import display_probability_chart
 from analyzers.collect_exe_files import get_partition_data, partition_pkl_files
 import gc
+import os
 
 
 def predict_byte(model, partition, xfiles, args):
@@ -66,8 +67,11 @@ def calculate_prediction_metrics(predict_obj):
     predict_obj.tpr = (tp / (tp + fn)) * 100
     predict_obj.fpr = (fp / (fp + tn)) * 100
     print(predict_obj.thd, predict_obj.tpr, predict_obj.fpr)
-    predict_obj.auc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred)
-    predict_obj.rauc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred, max_fpr=0.01)
+    try:
+        predict_obj.auc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred)
+        predict_obj.rauc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred, max_fpr=0.01)
+    except Exception as e:
+        print(str(e))
 
     print("Threshold used for Prediction :", predict_obj.thd,
           "TPR: {:6.2f}".format(predict_obj.tpr),
@@ -109,7 +113,7 @@ def get_bfn_mfp(pObj):
     if cnst.PERFORM_B2_BOOSTING:
         if pObj.boosting_upper_bound is None:
             fn_indices = np.all([pObj.ytrue.ravel() == cnst.MALWARE, prediction.ravel() == cnst.BENIGN], axis=0)
-            pObj.boosting_upper_bound = np.min(pObj.yprob[fn_indices])
+            pObj.boosting_upper_bound = np.min(pObj.yprob[fn_indices]) if np.sum(fn_indices) > 0 else 0
             print("Setting B2 boosting threshold:", pObj.boosting_upper_bound)
 
         # To filter the predicted Benign FN files from prediction results
@@ -318,9 +322,17 @@ def benchmark_tier1(model_idx, ptier1, fold_index, recon_fpr):
     predict_tier1(model_idx, ptier1, fold_index)
 
 
-def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, testdata, cv_obj, fold_index):
+def init(model_idx, testdata, cv_obj, fold_index):
     # TIER-1 PREDICTION OVER TEST DATA
     print("\nPrediction on Testing Data - TIER1")
+
+    todf = pd.read_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"))
+    thd1 = todf["thd1"][0]
+    thd2 = todf["thd2"][0]
+    boosting_bound = todf["boosting_bound"][0]
+    section_map = None
+    q_sections = pd.read_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "qualified_sections_" + str(fold_index) + ".csv"), header=None).values.squeeze()
+    print("THD1", thd1, "THD2", thd2, "Boosting Bound", boosting_bound)
 
     partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
     pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
@@ -331,7 +343,7 @@ def init(model_idx, thd1, boosting_upper_bound, thd2, q_sections, section_map, t
 
         predict_t1_test_data = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
         predict_t1_test_data.thd = thd1
-        predict_t1_test_data.boosting_upper_bound = boosting_upper_bound
+        predict_t1_test_data.boosting_upper_bound = boosting_bound
         predict_t1_test_data.partition = get_partition_data("test", fold_index, pcount, "t1")
         predict_t1_test_data = predict_tier1(model_idx, predict_t1_test_data, fold_index)
 
