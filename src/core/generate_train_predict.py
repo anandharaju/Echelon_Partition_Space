@@ -88,10 +88,13 @@ def train_predict(model_idx, dataset_path=None):
 
             cpt = time.time()
             print("\nTIME ELAPSED FOR GENERATING PARTITIONS:", str(int(cpt - tst) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
-        
-        train.init(model_idx, traindata, valdata, fold_index)
-        cpt = time.time()
-        print("\nTIME ELAPSED FOR TRAINING:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
+
+        if not cnst.SKIP_ENTIRE_TRAINING:
+            train.init(model_idx, traindata, valdata, fold_index)
+            cpt = time.time()
+            print("\nTIME ELAPSED FOR TRAINING:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
+        else:
+            print("SKIPPED: Tier 1&2 Training Process")
 
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************")
         pred_cv_obj = predict.init(model_idx, testdata, cv_obj, fold_index)

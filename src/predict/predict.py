@@ -164,13 +164,18 @@ def predict_tier1(model_idx, pobj, fold_index):
         pobj.yprob = predict_by_features(tier1_model, pobj.xtrue, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FUSION:
         pobj.yprob = predict_by_fusion(tier1_model, pobj.xtrue, predict_args)
+    return pobj
 
+
+def select_thd_get_metrics_bfn_mfp(tier, pobj):
     if pobj.thd is None:
         pobj = select_decision_threshold(pobj)  # +++ returned pobj also includes ypred based on selected threshold
     else:
         pobj = calculate_prediction_metrics(pobj)
 
-    pobj = get_bfn_mfp(pobj)
+    if tier == cnst.TIER1:
+        pobj = get_bfn_mfp(pobj)
+
     return pobj
 
 
@@ -185,14 +190,7 @@ def predict_tier2(model_idx, pobj, fold_index):
         pobj.yprob = predict_by_features(tier2_model, pobj.xtrue, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FUSION:
         pobj.yprob = predict_by_fusion(tier2_model, pobj.xtrue, predict_args)
-
-    if pobj.thd is None:
-        pObj = select_decision_threshold(pobj)  # +++ returned pobj also includes ypred based on selected threshold
-        # pObj = get_bfn_mfp(pObj)              # Enable if TIER-3 is added in future
-        return pObj
-    else:
-        pObj = calculate_prediction_metrics(pobj)
-        return pObj
+    return pobj
 
 
 def get_reconciled_tpr_fpr(yt1, yp1, yt2, yp2):
@@ -319,7 +317,7 @@ def benchmark_tier1(model_idx, ptier1, fold_index, recon_fpr):
     print("\nBenchmarking on Testing Data for TIER1 with overall FPR :", recon_fpr)
     ptier1.target_fpr = recon_fpr
     ptier1.thd = None
-    predict_tier1(model_idx, ptier1, fold_index)
+    # predict_tier1(model_idx, ptier1, fold_index)
 
 
 def init(model_idx, testdata, cv_obj, fold_index):
@@ -346,11 +344,10 @@ def init(model_idx, testdata, cv_obj, fold_index):
         predict_t1_test_data.boosting_upper_bound = boosting_bound
         predict_t1_test_data.partition = get_partition_data("test", fold_index, pcount, "t1")
         predict_t1_test_data = predict_tier1(model_idx, predict_t1_test_data, fold_index)
+        predict_t1_test_data = select_thd_get_metrics_bfn_mfp(cnst.TIER1, predict_t1_test_data)
 
-        print("Initiating garbage collection")
         del predict_t1_test_data.partition  # Release Memory
         gc.collect()
-        print("Completed garbage collection")
 
         # print("TPR:", predict_t1_test_data.tpr, "FPR:", predict_t1_test_data.fpr)
         # plots.plot_auc(ytrain, pred_proba1, thd1, "tier1")
@@ -370,7 +367,7 @@ def init(model_idx, testdata, cv_obj, fold_index):
     # TIER-2 PREDICTION
     print("Prediction on Testing Data - TIER2 [B1 data]")  # \t\t\tSection Map Length:", len(section_map))
     predict_t2_test_data_all = pObj(cnst.TIER2, None, None, None)
-
+    predict_t2_test_data_all.thd = thd2
     if thd2 is not None and q_sections is not None:
         for pcount in range(0, test_b1_partition_count):
             b1_tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
@@ -383,18 +380,18 @@ def init(model_idx, testdata, cv_obj, fold_index):
             predict_t2_test_data_partition.spartition = get_partition_data("b1_test", fold_index, pcount, "t2")
             predict_t2_test_data_partition = predict_tier2(model_idx, predict_t2_test_data_partition, fold_index)
 
-            print("Initiating garbage collection")
             del predict_t2_test_data_partition.wpartition  # Release Memory
             del predict_t2_test_data_partition.spartition  # Release Memory
             gc.collect()
-            print("Completed garbage collection")
 
             predict_t2_test_data_all.xtrue = predict_t2_test_data_partition.xtrue if predict_t2_test_data_all.xtrue is None else pd.concat([predict_t2_test_data_all.xtrue, predict_t2_test_data_partition.xtrue], axis=1)
             predict_t2_test_data_all.ytrue = predict_t2_test_data_partition.ytrue if predict_t2_test_data_all.ytrue is None else pd.concat([predict_t2_test_data_all.ytrue, predict_t2_test_data_partition.ytrue], axis=1)
             predict_t2_test_data_all.yprob = predict_t2_test_data_partition.yprob if predict_t2_test_data_all.yprob is None else pd.concat([predict_t2_test_data_all.yprob, predict_t2_test_data_partition.yprob], axis=1)
             predict_t2_test_data_all.ypred = predict_t2_test_data_partition.ypred if predict_t2_test_data_all.ypred is None else pd.concat([predict_t2_test_data_all.ypred, predict_t2_test_data_partition.ypred], axis=1)
 
-            print(predict_t2_test_data_all.ytrue.shape)
+            print("All Tier-2 Test data Size updated:", predict_t2_test_data_all.ytrue.shape)
+
+        predict_t2_test_data_all = select_thd_get_metrics_bfn_mfp(cnst.TIER2, predict_t2_test_data_all)
 
         display_probability_chart(predict_t2_test_data_all.ytrue, predict_t2_test_data_all.yprob, predict_t2_test_data_all.thd, "TESTING_TIER2_PROB_PLOT_" + str(fold_index+1))
         print("List of TPs found: ", predict_t2_test_data_all.xtrue[np.all([predict_t2_test_data_all.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data_all.ypred.ravel() == cnst.MALWARE], axis=0)])

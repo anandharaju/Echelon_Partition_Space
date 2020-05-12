@@ -9,7 +9,7 @@ import pickle
 def partition_pkl_files(type, fold, files, labels):
     partition_label = type + "_" + str(fold)
     # csv = pd.read_csv(csv_path, header=None)
-    print("Total number of files:", len(files))
+    print("Total number of files to partition:", len(files))
     partition_count = 0
     file_count = 0
     t1_partition_data = {}

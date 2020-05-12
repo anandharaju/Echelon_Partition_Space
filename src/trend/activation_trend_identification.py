@@ -13,6 +13,7 @@ from predict.predict_args import DefaultPredictArguments, Predict as pObj
 from plots.ati_plots import feature_map_histogram
 from .ati_args import SectionActivationDistribution
 import pandas as pd
+from analyzers.collect_exe_files import get_partition_data
 
 
 def find_qualified_sections(sd, trend, common_trend, support):
@@ -35,8 +36,8 @@ def find_qualified_sections(sd, trend, common_trend, support):
     q_sections_by_q_criteria = {}
     for i, val in enumerate(cnst.PERCENTILES):
         q_sections_by_q_criteria[mal_q_criteria_by_percentiles[i]] = np.unique(np.concatenate([trend.columns[malfluence > mal_q_criteria_by_percentiles[i]], trend.columns[benfluence > ben_q_criteria_by_percentiles[i]]]))
-        print("Mal Sections:", trend.columns[malfluence > mal_q_criteria_by_percentiles[i]])
-        print("Ben Sections:", trend.columns[benfluence > ben_q_criteria_by_percentiles[i]])
+        # print("Mal Sections:", trend.columns[malfluence > mal_q_criteria_by_percentiles[i]])
+        # print("Ben Sections:", trend.columns[benfluence > ben_q_criteria_by_percentiles[i]])
     return q_sections_by_q_criteria
 
 
@@ -162,37 +163,23 @@ def map_act_to_sec(ftype, fmap, sbounds, sd):
     return sd
 
 
-def process_files(args):
+def process_files(args, sd):
     unprocessed = 0
-    max_activation_value = 0
     samplewise_feature_maps = []
     stunted_model = get_stunted_model(args)
 
     print("FMAP MODULE Total B1 [{0}]\tGroundTruth [{1}:{2}]".format(len(args.t2_y_train),
                                                                      len(np.where(args.t2_y_train == cnst.BENIGN)[0]),
                                                                      len(np.where(args.t2_y_train == cnst.MALWARE)[0])))
-    sd = SectionActivationDistribution()
-    sd.b1_count = len(args.t2_y_train)
-    sd.b1_b_truth_count = len(np.where(args.t2_y_train == cnst.BENIGN)[0])
-    sd.b1_m_truth_count = len(np.where(args.t2_y_train == cnst.MALWARE)[0])
 
     pObj_fmap = pObj(cnst.TIER1, None, args.t2_x_train, args.t2_y_train)
     for i in range(0, len(pObj_fmap.xtrue)):
-        # print("File # ", i, "Max Activation Value:", max_activation_value)
         file = pObj_fmap.xtrue[i]
         file_type = pObj_fmap.ytrue[i]  # Using Ground Truth to get trend of actual benign and malware files
-        #if not os.path.exists(cnst.DATA_SOURCE_PATH + file):
-        #    print(file, " does not exist. Skipping . . .")
-        #    unprocessed += 1
-        #    continue
-
         section_bounds, unprocessed, fsize = parse_pe_pkl(i, file[:-4], args.section_b1_train_partition[file[:-4]], unprocessed)
 
         file_whole_bytes = {file[:-4]: args.whole_b1_train_partition[file[:-4]]}
         raw_feature_map = get_feature_map(stunted_model, file_whole_bytes, file)
-        # if len(np.shape(raw_feature_map)) == 1:
-        #    feature_map = raw_feature_map.ravel()
-        # else:
 
         if cnst.USE_POOLING_LAYER:
             try:
@@ -200,20 +187,14 @@ def process_files(args):
                 pooled_max_1D_map = np.sum(raw_feature_map == np.amax(raw_feature_map, axis=0), axis=1)[:np.min([cnst.MAX_FILE_CONVOLUTED_SIZE,int(fsize/cnst.CONV_STRIDE_SIZE)+2])]
                 sd = map_act_to_sec(file_type, pooled_max_1D_map, section_bounds, sd)
             except Exception as e:
-                print("$$$$$$$$", str(e))  # max_activation_value, raw_feature_map.ravel().size)
+                print("$$$$$$$$", str(e))  # raw_feature_map.ravel().size)
         else:
             feature_map = raw_feature_map.sum(axis=1).ravel()
             # feature_map_histogram(feature_map, prediction)
-            try:
-                if max_activation_value < feature_map.max():
-                    max_activation_value = feature_map.max()
-                    # print("max_activation_value: ", max_activation_value)
-            except Exception as e:
-                print("$$$$$$$$")  # max_activation_value, raw_feature_map.ravel().max(), raw_feature_map.ravel().size)
             samplewise_feature_maps.append(feature_map)
             sd = map_act_to_sec(file_type, feature_map, section_bounds, sd)
 
-    return sd, max_activation_value
+    return sd
 
     # print(section_stat)
     # print("Unprocessed file count: ", unprocessed)
@@ -343,23 +324,35 @@ def save_activation_trend(sd):
     return fmaps_trend, fmaps_common_trend, fmaps_section_support
 
 
-def start_ati_process(args):
-    print("\nATI - PROCESSING BENIGN AND MALWARE FILES\t\t", "B1 FILES COUNT:", np.shape(args.t2_y_train)[0])
-    print("-----------------------------------------")
-    sd, max_activation_value = process_files(args)
-    # print("Final max_activation_value", max_activation_value)
-    fmaps_trend, fmaps_common_trend, fmaps_section_support = save_activation_trend(sd)
-    return sd, fmaps_trend, fmaps_common_trend, fmaps_section_support
+def start_ati_process(args, fold_index, partition_count, sd):
+    for pcount in range(0, partition_count):
+        print("ATI for partition:", pcount)
+        b1datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+        args.t2_x_train, args.t2_y_train = b1datadf.iloc[:, 0], b1datadf.iloc[:, 1]
+        args.whole_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t1")
+        args.section_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t2")
+
+        sd = process_files(args, sd)
+    return sd
 
 
-def init(args):
-    sd, trend, common_trend, support = start_ati_process(args)
+def init(args, fold_index, partition_count, b1_all_file_cnt, b1b_all_truth_cnt, b1m_all_truth_cnt):
+    sd = SectionActivationDistribution()
+    sd.b1_count = b1_all_file_cnt
+    sd.b1_b_truth_count = b1b_all_truth_cnt
+    sd.b1_m_truth_count = b1m_all_truth_cnt
 
+    sd = start_ati_process(args, fold_index, partition_count, sd)
+    trend, common_trend, support = save_activation_trend(sd)
     # select sections for Tier-2 based on identified activation trend
     q_sections_by_q_criteria = find_qualified_sections(sd, trend, common_trend, support)
 
     # select, drop = plots.save_stats_as_plot(fmaps, qualification_criteria)
-    return q_sections_by_q_criteria  # select, drop
+
+    # Save qualified sections by Q_criteria
+    qdata = [np.concatenate([[str(q_criterion)], q_sections_by_q_criteria[q_criterion]]) for q_criterion in q_sections_by_q_criteria]
+    pd.DataFrame(qdata).to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC + "qsections_by_qcriteria_" + str(fold_index) + ".csv", index=False, header=None)
+    return  # select, drop
 
 
 if __name__ == '__main__':

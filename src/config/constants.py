@@ -40,9 +40,16 @@ EPOCHS = 1
 TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
 TIER1_TARGET_FPR = 0.01
-SKIP_TIER1_TRAINING = True
-SKIP_TIER2_TRAINING = False
+
+SKIP_ENTIRE_TRAINING = False
+SKIP_TIER1_TRAINING = False
+
+SKIP_TIER1_VALIDATION = False           # Generates Val B1
+SKIP_TIER1_TRAINING_PRED = False        # Generates Train B1
 SKIP_ATI_PROCESSING = False
+
+SKIP_TIER2_TRAINING = False
+
 
 # TIER-2
 TIER2 = "TIER2"
@@ -96,7 +103,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [92]
+PERCENTILES = [90, 92]
 RUN_FOLDS = [0]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
