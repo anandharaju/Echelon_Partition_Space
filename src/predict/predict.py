@@ -66,7 +66,7 @@ def calculate_prediction_metrics(predict_obj):
 
     predict_obj.tpr = (tp / (tp + fn)) * 100
     predict_obj.fpr = (fp / (fp + tn)) * 100
-    print(predict_obj.thd, predict_obj.tpr, predict_obj.fpr)
+    print("Before AUC score computation:", predict_obj.thd, predict_obj.tpr, predict_obj.fpr)
     try:
         predict_obj.auc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred)
         predict_obj.rauc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred, max_fpr=0.01)
@@ -370,8 +370,13 @@ def init(model_idx, testdata, cv_obj, fold_index):
 
         predict_t1_test_data_all.xB1 = predict_t1_test_data_partition.xB1 if predict_t1_test_data_all.xB1 is None else np.concatenate([predict_t1_test_data_all.xB1, predict_t1_test_data_partition.xB1])
         predict_t1_test_data_all.yB1 = predict_t1_test_data_partition.yB1 if predict_t1_test_data_all.yB1 is None else np.concatenate([predict_t1_test_data_all.yB1, predict_t1_test_data_partition.yB1])
+        predict_t1_test_data_all.yprobB1 = predict_t1_test_data_partition.yprobB1 if predict_t1_test_data_all.yprobB1 is None else np.concatenate([predict_t1_test_data_all.yprobB1, predict_t1_test_data_partition.yprobB1])
+        predict_t1_test_data_all.ypredB1 = predict_t1_test_data_partition.ypredB1 if predict_t1_test_data_all.ypredB1 is None else np.concatenate([predict_t1_test_data_all.ypredB1, predict_t1_test_data_partition.ypredB1])
+
         predict_t1_test_data_all.xM1 = predict_t1_test_data_partition.xM1 if predict_t1_test_data_all.xM1 is None else np.concatenate([predict_t1_test_data_all.xM1, predict_t1_test_data_partition.xM1])
         predict_t1_test_data_all.yM1 = predict_t1_test_data_partition.yM1 if predict_t1_test_data_all.yM1 is None else np.concatenate([predict_t1_test_data_all.yM1, predict_t1_test_data_partition.yM1])
+        predict_t1_test_data_all.yprobM1 = predict_t1_test_data_partition.yprobM1 if predict_t1_test_data_all.yprobM1 is None else np.concatenate([predict_t1_test_data_all.yprobM1, predict_t1_test_data_partition.yprobM1])
+        predict_t1_test_data_all.ypredM1 = predict_t1_test_data_partition.ypredM1 if predict_t1_test_data_all.ypredM1 is None else np.concatenate([predict_t1_test_data_all.ypredM1, predict_t1_test_data_partition.ypredM1])
 
         test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data_partition.xB1), pd.DataFrame(predict_t1_test_data_partition.yB1), pd.DataFrame(predict_t1_test_data_partition.yprobB1)], axis=1)
         test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
@@ -384,6 +389,11 @@ def init(model_idx, testdata, cv_obj, fold_index):
     # predict_t1_test_data_all.xM1, predict_t1_test_data_all.yM1 = test_m1datadf_all.iloc[:, 0], test_m1datadf_all.iloc[:, 1]
 
     predict_t1_test_data_all = select_thd_get_metrics(predict_t1_test_data_all)
+
+    if len(predict_t1_test_data_all.xB1) == 0:
+        print(" \n !!!!!      Skipping Tier-2 - B1 set is empty")
+        return None
+
     test_b1_partition_count = partition_pkl_files("b1_test", fold_index, predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1)
 
     # TIER-2 PREDICTION
