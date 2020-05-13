@@ -378,6 +378,11 @@ def init(model_idx, testdata, cv_obj, fold_index):
         predict_t1_test_data_all.yprobM1 = predict_t1_test_data_partition.yprobM1 if predict_t1_test_data_all.yprobM1 is None else np.concatenate([predict_t1_test_data_all.yprobM1, predict_t1_test_data_partition.yprobM1])
         predict_t1_test_data_all.ypredM1 = predict_t1_test_data_partition.ypredM1 if predict_t1_test_data_all.ypredM1 is None else np.concatenate([predict_t1_test_data_all.ypredM1, predict_t1_test_data_partition.ypredM1])
 
+        predict_t1_test_data_all.boosted_xB2 = predict_t1_test_data_partition.boosted_xB2 if predict_t1_test_data_all.boosted_xB2 is None else np.concatenate([predict_t1_test_data_all.boosted_xB2, predict_t1_test_data_partition.boosted_xB2])
+        predict_t1_test_data_all.boosted_yB2 = predict_t1_test_data_partition.boosted_yB2 if predict_t1_test_data_all.boosted_yB2 is None else np.concatenate([predict_t1_test_data_all.boosted_yB2, predict_t1_test_data_partition.boosted_yB2])
+        predict_t1_test_data_all.boosted_yprobB2 = predict_t1_test_data_partition.boosted_yprobB2 if predict_t1_test_data_all.boosted_yprobB2 is None else np.concatenate([predict_t1_test_data_all.boosted_yprobB2, predict_t1_test_data_partition.boosted_yprobB2])
+        predict_t1_test_data_all.boosted_ypredB2 = predict_t1_test_data_partition.boosted_ypredB2 if predict_t1_test_data_all.boosted_ypredB2 is None else np.concatenate([predict_t1_test_data_all.boosted_ypredB2, predict_t1_test_data_partition.boosted_ypredB2])
+
         test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data_partition.xB1), pd.DataFrame(predict_t1_test_data_partition.yB1), pd.DataFrame(predict_t1_test_data_partition.yprobB1)], axis=1)
         test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
         test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data_partition.xM1), pd.DataFrame(predict_t1_test_data_partition.yM1), pd.DataFrame(predict_t1_test_data_partition.yprobM1)], axis=1)
