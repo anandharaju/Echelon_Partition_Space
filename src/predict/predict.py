@@ -179,6 +179,15 @@ def select_thd_get_metrics_bfn_mfp(tier, pobj):
     return pobj
 
 
+def select_thd_get_metrics(pobj):
+    if pobj.thd is None:
+        pobj = select_decision_threshold(pobj)  # +++ returned pobj also includes ypred based on selected threshold
+    else:
+        pobj = calculate_prediction_metrics(pobj)
+
+    return pobj
+
+
 def predict_tier2(model_idx, pobj, fold_index):
     predict_args = DefaultPredictArguments()
     tier2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
@@ -352,18 +361,19 @@ def init(model_idx, testdata, cv_obj, fold_index):
         del predict_t1_test_data_partition.partition  # Release Memory
         gc.collect()
 
+        predict_t1_test_data_partition = get_bfn_mfp(predict_t1_test_data_partition)
         test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data_partition.xB1), pd.DataFrame(predict_t1_test_data_partition.yB1), pd.DataFrame(predict_t1_test_data_partition.yprobB1)], axis=1)
         test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
         test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data_partition.xM1), pd.DataFrame(predict_t1_test_data_partition.yM1), pd.DataFrame(predict_t1_test_data_partition.yprobM1)], axis=1)
         test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
 
-    test_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None)
-    predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1 = test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1]
-    test_m1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None)
-    predict_t1_test_data_all.xM1, predict_t1_test_data_all.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
+    test_b1datadf_all = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None)
+    predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1 = test_b1datadf_all.iloc[:, 0], test_b1datadf_all.iloc[:, 1]
+    test_m1datadf_all = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None)
+    predict_t1_test_data_all.xM1, predict_t1_test_data_all.yM1 = test_m1datadf_all.iloc[:, 0], test_m1datadf_all.iloc[:, 1]
 
-    predict_t1_test_data_all = select_thd_get_metrics_bfn_mfp(cnst.TIER1, predict_t1_test_data_all)
-    test_b1_partition_count = partition_pkl_files("b1_test", fold_index, test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1])
+    predict_t1_test_data_all = select_thd_get_metrics(predict_t1_test_data_all)
+    test_b1_partition_count = partition_pkl_files("b1_test", fold_index, test_b1datadf_all.iloc[:, 0], test_b1datadf_all.iloc[:, 1])
 
     # TIER-2 PREDICTION
     print("Prediction on Testing Data - TIER2 [B1 data]         # Partitions", test_b1_partition_count)  # \t\t\tSection Map Length:", len(section_map))
