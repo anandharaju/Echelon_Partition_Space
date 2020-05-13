@@ -242,6 +242,7 @@ def init(model_idx, traindata, valdata, fold_index):
             # ~~~~~~~~~~~~~~~~~~~
             cnst.USE_PRETRAINED_FOR_TIER1 = False
     else:
+        cnst.USE_PRETRAINED_FOR_TIER1 = False  # Use model trained through Echelon
         print("SKIPPED: Tier-1 Training process")
 
     # TIER-1 PREDICTION OVER TRAINING DATA [Select THD1]
@@ -348,6 +349,7 @@ def init(model_idx, traindata, valdata, fold_index):
     t_args.t2_model_base = get_model2(t_args)
     t2_fpr = cnst.TIER2_TARGET_FPR
     print("Updated Tier-2 target FPR:", t2_fpr)
+    gc.collect()
 
     thd2 = 0
     maxdiff = 0
@@ -382,6 +384,7 @@ def init(model_idx, traindata, valdata, fold_index):
                 gc.collect()
                 cnst.USE_PRETRAINED_FOR_TIER2 = False
         else:
+            cnst.USE_PRETRAINED_FOR_TIER2 = False  # Use model trained through Echelon
             print("SKIPPED: Tier-2 Training Process")
 
         # print("Loading stored B1 Data from Validation set for THD2 selection")
@@ -405,10 +408,10 @@ def init(model_idx, traindata, valdata, fold_index):
             del predict_t2_val_data_partition.spartition  # Release Memory
             gc.collect()
 
-            predict_t2_val_data_all.xtrue = predict_t2_val_data_partition.xtrue if predict_t2_val_data_all.xtrue is None else pd.concat([predict_t2_val_data_all.xtrue, predict_t2_val_data_partition.xtrue], axis=1)
-            predict_t2_val_data_all.ytrue = predict_t2_val_data_partition.ytrue if predict_t2_val_data_all.ytrue is None else pd.concat([predict_t2_val_data_all.ytrue, predict_t2_val_data_partition.ytrue], axis=1)
-            predict_t2_val_data_all.yprob = predict_t2_val_data_partition.yprob if predict_t2_val_data_all.yprob is None else pd.concat([predict_t2_val_data_all.yprob, predict_t2_val_data_partition.yprob], axis=1)
-            predict_t2_val_data_all.ypred = predict_t2_val_data_partition.ypred if predict_t2_val_data_all.ypred is None else pd.concat([predict_t2_val_data_all.ypred, predict_t2_val_data_partition.ypred], axis=1)
+            predict_t2_val_data_all.xtrue = predict_t2_val_data_partition.xtrue if predict_t2_val_data_all.xtrue is None else np.concatenate([predict_t2_val_data_all.xtrue, predict_t2_val_data_partition.xtrue])
+            predict_t2_val_data_all.ytrue = predict_t2_val_data_partition.ytrue if predict_t2_val_data_all.ytrue is None else np.concatenate([predict_t2_val_data_all.ytrue, predict_t2_val_data_partition.ytrue])
+            predict_t2_val_data_all.yprob = predict_t2_val_data_partition.yprob if predict_t2_val_data_all.yprob is None else np.concatenate([predict_t2_val_data_all.yprob, predict_t2_val_data_partition.yprob])
+            predict_t2_val_data_all.ypred = predict_t2_val_data_partition.ypred if predict_t2_val_data_all.ypred is None else np.concatenate([predict_t2_val_data_all.ypred, predict_t2_val_data_partition.ypred])
 
             print("All Tier-2 Test data Size updated:", predict_t2_val_data_all.ytrue.shape)
 
@@ -418,7 +421,7 @@ def init(model_idx, traindata, valdata, fold_index):
         #print("FPR: {:6.2f}".format(predict_t2_val_data_all.fpr), "TPR: {:6.2f}".format(predict_t2_val_data_all.tpr), "\tTHD2: {:6.2f}".format(predict_t2_val_data_all.thd))
 
         curdiff = predict_t2_val_data_all.tpr - predict_t2_val_data_all.fpr
-        if True:  # curdiff != 0 and curdiff > maxdiff:
+        if curdiff != 0 and curdiff > maxdiff:
             maxdiff = curdiff
             q_criterion_selected = q_criterion
             best_t2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
@@ -442,14 +445,14 @@ def init(model_idx, traindata, valdata, fold_index):
 
     print("Percentile\t#Sections\tQ-Criterion\tTHD\t\tFPR\t\tTPR\t\t[TPR-FPR]")
     for i,p in enumerate(cnst.PERCENTILES):
-        print(str(qstats.percentiles[i])+"\t\t"+str(len(list(qstats.sections)[i]))+"\t\t{:6.6f}\t\t{:6.2f}\t\t{:6.2f}\t\t{:6.2f}\t\t{:6.2f}".format(list(qstats.qcriteria)[i], qstats.thds[i], qstats.fprs[i], qstats.tprs[i], qstats.tprs[i]-qstats.fprs[i]))
+        print(str(qstats.percentiles[i])+"\t\t"+str(len(list(qstats.sections)[i]))+"\t\t{:6.6f}\t{:6.2f}\t\t{:6.2f}\t\t{:6.2f}\t\t{:6.2f}".format(list(qstats.qcriteria)[i], qstats.thds[i], qstats.fprs[i], qstats.tprs[i], qstats.tprs[i]-qstats.fprs[i]))
 
     # Get the sections that had maximum TPR and low FPR over B1 training data as Final Qualified sections
     print("\n\tBest Q_Criterion:", q_criterion_selected, "Related Q_Sections:", q_sections_selected.values)
 
     print("************************ TIER 2 TRAINING - ENDED   ****************************")
     # return None, None, thd2, q_sections_selected, t_args.train_section_map
-    pd.DataFrame([{"thd1": predict_t1_train_data.thd, "thd2": thd2, "boosting_bound": predict_t1_train_data.boosting_upper_bound}]).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"), index=False)
+    pd.DataFrame([{"thd1": max_val_thd1, "thd2": thd2, "boosting_bound": min_boosting_bound}]).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"), index=False)
     pd.DataFrame(q_sections_selected).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "qualified_sections_" + str(fold_index) + ".csv"), header=None, index=False)
     return  # predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
 

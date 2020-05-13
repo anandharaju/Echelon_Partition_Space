@@ -322,7 +322,8 @@ def benchmark_tier1(model_idx, ptier1, fold_index, recon_fpr):
 
 def init(model_idx, testdata, cv_obj, fold_index):
     # TIER-1 PREDICTION OVER TEST DATA
-    print("\nPrediction on Testing Data - TIER1")
+    partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
+    print("\nPrediction on Testing Data - TIER1       # Partitions:", partition_tracker_df["test"][0])
 
     todf = pd.read_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"))
     thd1 = todf["thd1"][0]
@@ -332,40 +333,40 @@ def init(model_idx, testdata, cv_obj, fold_index):
     q_sections = pd.read_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "qualified_sections_" + str(fold_index) + ".csv"), header=None).values.squeeze()
     print("THD1", thd1, "THD2", thd2, "Boosting Bound", boosting_bound)
 
-    partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
     pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
     pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None)
+
+    predict_t1_test_data_all = pObj(cnst.TIER2, None, None, None)
+    predict_t1_test_data_all.thd = thd1
+
     for pcount in range(0, partition_tracker_df["test"][0]):
         tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
         testdata.xdf, testdata.ydf = tst_datadf.iloc[:, 0], tst_datadf.iloc[:, 1]
 
-        predict_t1_test_data = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
-        predict_t1_test_data.thd = thd1
-        predict_t1_test_data.boosting_upper_bound = boosting_bound
-        predict_t1_test_data.partition = get_partition_data("test", fold_index, pcount, "t1")
-        predict_t1_test_data = predict_tier1(model_idx, predict_t1_test_data, fold_index)
-        predict_t1_test_data = select_thd_get_metrics_bfn_mfp(cnst.TIER1, predict_t1_test_data)
+        predict_t1_test_data_partition = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
+        predict_t1_test_data_partition.thd = thd1
+        predict_t1_test_data_partition.boosting_upper_bound = boosting_bound
+        predict_t1_test_data_partition.partition = get_partition_data("test", fold_index, pcount, "t1")
+        predict_t1_test_data_partition = predict_tier1(model_idx, predict_t1_test_data_partition, fold_index)
 
-        del predict_t1_test_data.partition  # Release Memory
+        del predict_t1_test_data_partition.partition  # Release Memory
         gc.collect()
 
-        # print("TPR:", predict_t1_test_data.tpr, "FPR:", predict_t1_test_data.fpr)
-        # plots.plot_auc(ytrain, pred_proba1, thd1, "tier1")
-
-        test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xB1), pd.DataFrame(predict_t1_test_data.yB1), pd.DataFrame(predict_t1_test_data.yprobB1)], axis=1)
+        test_b1datadf = pd.concat([pd.DataFrame(predict_t1_test_data_partition.xB1), pd.DataFrame(predict_t1_test_data_partition.yB1), pd.DataFrame(predict_t1_test_data_partition.yprobB1)], axis=1)
         test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
-        test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data.xM1), pd.DataFrame(predict_t1_test_data.yM1), pd.DataFrame(predict_t1_test_data.yprobM1)], axis=1)
+        test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data_partition.xM1), pd.DataFrame(predict_t1_test_data_partition.yM1), pd.DataFrame(predict_t1_test_data_partition.yprobM1)], axis=1)
         test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
 
     test_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None)
-    predict_t1_test_data.xB1, predict_t1_test_data.yB1 = test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1]
+    predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1 = test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1]
     test_m1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None)
-    predict_t1_test_data.xM1, predict_t1_test_data.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
+    predict_t1_test_data_all.xM1, predict_t1_test_data_all.yM1 = test_m1datadf.iloc[:, 0], test_m1datadf.iloc[:, 1]
 
+    predict_t1_test_data_all = select_thd_get_metrics_bfn_mfp(cnst.TIER1, predict_t1_test_data_all)
     test_b1_partition_count = partition_pkl_files("b1_test", fold_index, test_b1datadf.iloc[:, 0], test_b1datadf.iloc[:, 1])
 
     # TIER-2 PREDICTION
-    print("Prediction on Testing Data - TIER2 [B1 data]")  # \t\t\tSection Map Length:", len(section_map))
+    print("Prediction on Testing Data - TIER2 [B1 data]         # Partitions", test_b1_partition_count)  # \t\t\tSection Map Length:", len(section_map))
     predict_t2_test_data_all = pObj(cnst.TIER2, None, None, None)
     predict_t2_test_data_all.thd = thd2
     if thd2 is not None and q_sections is not None:
@@ -384,10 +385,10 @@ def init(model_idx, testdata, cv_obj, fold_index):
             del predict_t2_test_data_partition.spartition  # Release Memory
             gc.collect()
 
-            predict_t2_test_data_all.xtrue = predict_t2_test_data_partition.xtrue if predict_t2_test_data_all.xtrue is None else pd.concat([predict_t2_test_data_all.xtrue, predict_t2_test_data_partition.xtrue], axis=1)
-            predict_t2_test_data_all.ytrue = predict_t2_test_data_partition.ytrue if predict_t2_test_data_all.ytrue is None else pd.concat([predict_t2_test_data_all.ytrue, predict_t2_test_data_partition.ytrue], axis=1)
-            predict_t2_test_data_all.yprob = predict_t2_test_data_partition.yprob if predict_t2_test_data_all.yprob is None else pd.concat([predict_t2_test_data_all.yprob, predict_t2_test_data_partition.yprob], axis=1)
-            predict_t2_test_data_all.ypred = predict_t2_test_data_partition.ypred if predict_t2_test_data_all.ypred is None else pd.concat([predict_t2_test_data_all.ypred, predict_t2_test_data_partition.ypred], axis=1)
+            predict_t2_test_data_all.xtrue = predict_t2_test_data_partition.xtrue if predict_t2_test_data_all.xtrue is None else np.concatenate([predict_t2_test_data_all.xtrue, predict_t2_test_data_partition.xtrue])
+            predict_t2_test_data_all.ytrue = predict_t2_test_data_partition.ytrue if predict_t2_test_data_all.ytrue is None else np.concatenate([predict_t2_test_data_all.ytrue, predict_t2_test_data_partition.ytrue])
+            predict_t2_test_data_all.yprob = predict_t2_test_data_partition.yprob if predict_t2_test_data_all.yprob is None else np.concatenate([predict_t2_test_data_all.yprob, predict_t2_test_data_partition.yprob])
+            predict_t2_test_data_all.ypred = predict_t2_test_data_partition.ypred if predict_t2_test_data_all.ypred is None else np.concatenate([predict_t2_test_data_all.ypred, predict_t2_test_data_partition.ypred])
 
             print("All Tier-2 Test data Size updated:", predict_t2_test_data_all.ytrue.shape)
 
@@ -399,7 +400,7 @@ def init(model_idx, testdata, cv_obj, fold_index):
     
         # RECONCILIATION OF PREDICTION RESULTS FROM TIER - 1&2
         still_benign_indices = np.where(np.all([predict_t2_test_data_all.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data_all.ypred.ravel() == cnst.BENIGN], axis=0))[0]
-        predict_t2_test_data_all.yprob[still_benign_indices] = predict_t1_test_data.yprobB1[still_benign_indices]  # Assign Tier-1 probabilities for samples that are still benign to avoid AUC conflict
+        predict_t2_test_data_all.yprob[still_benign_indices] = predict_t1_test_data_all.yprobB1[still_benign_indices]  # Assign Tier-1 probabilities for samples that are still benign to avoid AUC conflict
 
         new_tp_indices = np.where(np.all([predict_t2_test_data_all.ytrue.ravel() == cnst.MALWARE, predict_t2_test_data_all.ypred.ravel() == cnst.MALWARE], axis=0))[0]
         predict_t2_test_data_all.yprob[new_tp_indices] -= predict_t2_test_data_all.yprob[new_tp_indices] + 1
@@ -407,7 +408,7 @@ def init(model_idx, testdata, cv_obj, fold_index):
         new_fp_indices = np.where(np.all([predict_t2_test_data_all.ytrue.ravel() == cnst.BENIGN, predict_t2_test_data_all.ypred.ravel() == cnst.MALWARE], axis=0))[0]
         predict_t2_test_data_all.yprob[new_fp_indices] -= predict_t2_test_data_all.yprob[new_fp_indices]
 
-        cvobj, benchmark_fpr = reconcile(predict_t1_test_data, predict_t2_test_data_all, cv_obj, fold_index)
+        cvobj, benchmark_fpr = reconcile(predict_t1_test_data_all, predict_t2_test_data_all, cv_obj, fold_index)
         # benchmark_tier1(model_idx, predict_t1_test_data, fold_index, benchmark_fpr)
         return cvobj
     else:

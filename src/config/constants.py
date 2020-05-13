@@ -15,13 +15,13 @@ TIER2_PRETRAINED_MODEL = "ember_malconv.h5"
 BENIGN = 0
 MALWARE = 1
 T1_TRAIN_BATCH_SIZE = 64
-T2_TRAIN_BATCH_SIZE = 64
+T2_TRAIN_BATCH_SIZE = 32
 PREDICT_BATCH_SIZE = 128
 
 T1_VERBOSE = VERBOSE_1
 T2_VERBOSE = VERBOSE_1
 PREDICT_VERBOSE = VERBOSE_1
-ATI_PREDICT_VERBOSE = VERBOSE_0
+ATI_PREDICT_VERBOSE = VERBOSE_1
 
 #####################################################################################
 USE_GPU = True
@@ -39,14 +39,14 @@ EPOCHS = 1
 # TIER-1
 TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
-TIER1_TARGET_FPR = 0.01
+TIER1_TARGET_FPR = 0.1
 
-SKIP_ENTIRE_TRAINING = False
-SKIP_TIER1_TRAINING = False
+SKIP_ENTIRE_TRAINING = True
+SKIP_TIER1_TRAINING = True
 
-SKIP_TIER1_VALIDATION = False           # Generates Val B1
-SKIP_TIER1_TRAINING_PRED = False        # Generates Train B1
-SKIP_ATI_PROCESSING = False
+SKIP_TIER1_VALIDATION = True           # Generates Val B1
+SKIP_TIER1_TRAINING_PRED = True        # Generates Train B1
+SKIP_ATI_PROCESSING = True
 
 SKIP_TIER2_TRAINING = False
 
@@ -56,7 +56,7 @@ TIER2 = "TIER2"
 TIER2_EPOCHS = EPOCHS
 TIER2_TARGET_FPR = 0
 
-OVERALL_TARGET_FPR = 0.01
+OVERALL_TARGET_FPR = 0.1
 #####################################################################################
 
 # CROSS VALIDATION
@@ -103,7 +103,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [90, 92]
+PERCENTILES = [92]
 RUN_FOLDS = [0]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
