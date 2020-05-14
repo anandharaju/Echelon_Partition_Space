@@ -69,7 +69,7 @@ def calculate_prediction_metrics(predict_obj):
     print("Before AUC score computation:", predict_obj.thd, predict_obj.tpr, predict_obj.fpr)
     try:
         predict_obj.auc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred)
-        predict_obj.rauc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred, max_fpr=0.01)
+        predict_obj.rauc = metrics.roc_auc_score(predict_obj.ytrue, predict_obj.ypred, max_fpr=cnst.OVERALL_TARGET_FPR/100)
     except Exception as e:
         print(str(e))
 
@@ -314,10 +314,11 @@ def reconcile(pt1, pt2, cv_obj, fold_index):
     cv_obj.recon_fpr_list = np.append(cv_obj.recon_fpr_list, rfpr)
 
     cv_obj.t1_mean_auc_score = np.append(cv_obj.t1_mean_auc_score, metrics.roc_auc_score(pt1.ytrue, pt1.yprob))
-    cv_obj.t1_mean_auc_score_restricted = np.append(cv_obj.t1_mean_auc_score_restricted, metrics.roc_auc_score(pt1.ytrue, pt1.yprob, max_fpr=0.01))
+    cv_obj.t1_mean_auc_score_restricted = np.append(cv_obj.t1_mean_auc_score_restricted, metrics.roc_auc_score(pt1.ytrue, pt1.yprob, max_fpr=cnst.OVERALL_TARGET_FPR/100))
     cv_obj.recon_mean_auc_score = np.append(cv_obj.recon_mean_auc_score, metrics.roc_auc_score(ytruereconciled, yprobreconciled))
-    cv_obj.recon_mean_auc_score_restricted = np.append(cv_obj.recon_mean_auc_score_restricted, metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=0.01))
-    print("Tier1 Restricted AUC = %0.3f [Full AUC: %0.3f]" % (metrics.roc_auc_score(pt1.ytrue, pt1.yprob, max_fpr=0.01), metrics.roc_auc_score(pt1.ytrue, pt1.yprob)), "Recon Restricted AUC = %0.3f [Full AUC: %0.3f]" % (metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=0.01), metrics.roc_auc_score(ytruereconciled, yprobreconciled)))
+    cv_obj.recon_mean_auc_score_restricted = np.append(cv_obj.recon_mean_auc_score_restricted, metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=cnst.OVERALL_TARGET_FPR/100))
+    print("Tier1 Restricted AUC = %0.3f [Full AUC: %0.3f]" % (metrics.roc_auc_score(pt1.ytrue, pt1.yprob, max_fpr=cnst.OVERALL_TARGET_FPR/100), metrics.roc_auc_score(pt1.ytrue, pt1.yprob)),
+          "Recon Restricted AUC = %0.3f [Full AUC: %0.3f]" % (metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=cnst.OVERALL_TARGET_FPR/100), metrics.roc_auc_score(ytruereconciled, yprobreconciled)))
 
     return cv_obj, rfpr
 

@@ -419,7 +419,8 @@ def plot_fpr_train_vs_test(list_train_y, list_train_pred_val, list_test_y, list_
     plt.legend(loc=1, prop={'size': 5})
     plt.savefig("FPR_train_vs_test_"+str(time.time())+".png", bbox_inches='tight')
     plt.close()
-	
+
+
 def plot_auc_reconciled(Y, pred, prob, tier):
     plt.clf()
     # AUC PLOT
@@ -440,7 +441,7 @@ def plot_auc_reconciled(Y, pred, prob, tier):
     FPR = (fp/(fp+tn))*100
     FNR = (fn/(fn+tp))*100
     fpr_auc, tpr_auc, thds_auc = metrics.roc_curve(Y, prob, drop_intermediate=False)
-    auc = metrics.roc_auc_score(Y, prob, max_fpr=0.01)
+    auc = metrics.roc_auc_score(Y, prob, max_fpr=cnst.OVERALL_TARGET_FPR/100)
 
     global mean_recon_micro_precision
     global mean_recon_micro_recall
@@ -544,7 +545,7 @@ def plot_auc(Y, prob, confidence, tier):
     FPR = (fp/(fp+tn))*100
     FNR = (fn/(fn+tp))*100
     fpr_auc, tpr_auc, thds_auc = metrics.roc_curve(Y, prob, drop_intermediate=False)
-    auc = metrics.roc_auc_score(Y, prob, max_fpr=0.02)
+    auc = metrics.roc_auc_score(Y, prob, max_fpr=cnst.OVERALL_TARGET_FPR/100)
 
     if "tier1" in tier:
         global mean_tier1_micro_precision

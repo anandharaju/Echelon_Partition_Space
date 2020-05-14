@@ -90,20 +90,20 @@ def train_predict(model_idx, dataset_path=None):
             print("\nTIME ELAPSED FOR GENERATING PARTITIONS:", str(int(cpt - tst) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
 
         if not cnst.SKIP_ENTIRE_TRAINING:
-            train.init(model_idx, traindata, valdata, fold_index)
             cpt = time.time()
+            train.init(model_idx, traindata, valdata, fold_index)
             print("\nTIME ELAPSED FOR TRAINING:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
         else:
             print("SKIPPED: Tier 1&2 Training Process")
 
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************")
+        cpt = time.time()
         pred_cv_obj = predict.init(model_idx, testdata, cv_obj, fold_index)
         if pred_cv_obj is not None:
             cv_obj = pred_cv_obj
         else:
             print("Problem occurred during prediction phase of current fold. Proceeding to next fold . . .")
         print("**********************  PREDICTION TIER 1&2 - ENDED    ************************")
-        cpt = time.time()
         print("\nTIME ELAPSED FOR PREDICTION:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
 
         tet = time.time() - tst

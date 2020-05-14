@@ -43,7 +43,7 @@ def plot_cv_auc(cv_obj):
              label=r'Tier-1 ROC (Restricted AUC = %0.3f) [Full AUC: %0.3f]' % (
                  np.mean(cv_obj.t1_mean_auc_score_restricted),
                  np.mean(cv_obj.t1_mean_auc_score)),
-                 # metrics.roc_auc_score(pt1.ytrue, pt1.yprob, max_fpr=0.01),
+                 # metrics.roc_auc_score(pt1.ytrue, pt1.yprob, max_fpr=cnst.OVERALL_TARGET_FPR/100),
                  # metrics.roc_auc_score(pt1.ytrue, pt1.yprob)),
              lw=2, alpha=.8)
 
@@ -51,9 +51,9 @@ def plot_cv_auc(cv_obj):
              label=r'Reconciled ROC (Restricted AUC = %0.3f) [Full AUC: %0.3f]' % (
                  np.mean(cv_obj.recon_mean_auc_score_restricted),
                  np.mean(cv_obj.recon_mean_auc_score)),
-                 # metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=0.01),
+                 # metrics.roc_auc_score(ytruereconciled, yprobreconciled, max_fpr=cnst.OVERALL_TARGET_FPR/100),
                  # metrics.roc_auc_score(ytruereconciled, yprobreconciled)),
-                 # metrics.roc_auc_score(pt1.yM1, pt1.yprobM1, max_fpr=0.01) + metrics.roc_auc_score(pt2.ytrue, pt2.yprob, max_fpr=0.01),
+                 # metrics.roc_auc_score(pt1.yM1, pt1.yprobM1, max_fpr=cnst.OVERALL_TARGET_FPR/100) + metrics.roc_auc_score(pt2.ytrue, pt2.yprob, max_fpr=cnst.OVERALL_TARGET_FPR/100),
                  # metrics.roc_auc_score(pt1.yM1, pt1.yprobM1) + metrics.roc_auc_score(pt2.ytrue, pt2.yprob)),
              lw=2, alpha=.8)
     plt.xlim(0, 2)

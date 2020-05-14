@@ -34,7 +34,7 @@ def plot_cv_auc():
     plt.legend(loc=8, prop={'size': font_size})
     plt.grid(b=True, which='both')
     plt.savefig(".."+cnst.ESC+"out"+cnst.ESC+"imgs"+cnst.ESC+"cv_auc_seaborn.png", bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
 
 plot_cv_auc()
