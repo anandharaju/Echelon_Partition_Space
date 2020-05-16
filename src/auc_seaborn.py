@@ -24,17 +24,17 @@ def plot_cv_auc():
     sns.lineplot(fpr1, tpr1, color='r', linewidth=1, label=r'Tier-1 ROC (Restricted AUC = %0.3f) [Full AUC: %0.3f]' % (scores[0], scores[1]), alpha=.8)
     sns.lineplot(rfpr, rtpr, color='b', linewidth=1, label=r'Reconciled ROC (Restricted AUC = %0.3f) [Full AUC: %0.3f]' % (scores[2], scores[3]), alpha=.8)
 
-    #plt.xlim(0, 1.1)
+    plt.xlim(0, cnst.OVERALL_TARGET_FPR * 2)
     plt.xlabel("FPR %", fontsize=font_size)
     plt.ylabel("TPR %", fontsize=font_size)
     #plt.xticks(fontsize=font_size, ticks=[x/10 for x in np.arange(0, 11, 1)], labels=[str(x/10)+"%" for x in np.arange(0, 11, 1)])
     plt.yticks(fontsize=font_size, ticks=[y for y in np.arange(0, 105, 10)], labels=[str(y)+"%" for y in np.arange(0, 105, 10)])
-    plt.plot([1, 1], [0, 100], 'grey', linestyle=':', label="Target FPR")
+    plt.plot([cnst.OVERALL_TARGET_FPR, cnst.OVERALL_TARGET_FPR], [0, 100], 'grey', linestyle=':', label="Target FPR")
     plt.plot([0, 2], [90, 90], 'grey', linestyle='-.', label="Target TPR")
     plt.legend(loc=8, prop={'size': font_size})
     plt.grid(b=True, which='both')
     plt.savefig(".."+cnst.ESC+"out"+cnst.ESC+"imgs"+cnst.ESC+"cv_auc_seaborn.png", bbox_inches='tight')
-    # plt.show()
+    plt.show()
 
 
 plot_cv_auc()

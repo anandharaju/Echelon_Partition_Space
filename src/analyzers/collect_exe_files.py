@@ -7,7 +7,11 @@ import pickle
 
 
 def partition_pkl_files(type, fold, files, labels):
-    partition_label = type + "_" + str(fold)
+    if type is not None:
+        partition_label = type + "_" + str(fold) + "_"
+    else:
+        partition_label = ""
+
     # csv = pd.read_csv(csv_path, header=None)
     print("Total number of files to partition:", len(files))
     partition_count = 0
@@ -27,8 +31,8 @@ def partition_pkl_files(type, fold, files, labels):
         t2_src_file_size = os.stat(t2_pkl_src_path).st_size
 
         if cur_t1_partition_size > cnst.MAX_PARTITION_SIZE or cur_t2_partition_size > cnst.MAX_PARTITION_SIZE:
-            t1_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label + "_t1_p" + str(partition_count))
-            t2_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label + "_t2_p" + str(partition_count))
+            t1_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label + "t1_p" + str(partition_count))
+            t2_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label + "t2_p" + str(partition_count))
 
             with open(t1_partition_path+".pkl", "wb") as pt1handle:
                 pickle.dump(t1_partition_data, pt1handle)
@@ -36,8 +40,8 @@ def partition_pkl_files(type, fold, files, labels):
                 pickle.dump(t2_partition_data, pt2handle)
 
             end = i
-            pd.DataFrame(list(zip(files[start:end], labels[start:end]))).to_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + partition_label + "_p" + str(partition_count) + ".csv", header=None, index=False)
-            print("Created Partition", partition_label+"_p"+str(partition_count), "with", file_count, "files and tracker csv with " + str(len(files[start:end])) + " files.")
+            pd.DataFrame(list(zip(files[start:end], labels[start:end]))).to_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + partition_label + "p" + str(partition_count) + ".csv", header=None, index=False)
+            print("Created Partition", partition_label+"p"+str(partition_count), "with", file_count, "files and tracker csv with " + str(len(files[start:end])) + " files.")
             file_count = 0
             partition_count += 1
             t1_partition_data = {}
@@ -56,21 +60,25 @@ def partition_pkl_files(type, fold, files, labels):
             file_count += 1
 
     if cur_t1_partition_size > 0 or cur_t2_partition_size > 0:
-        t1_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"_t1_p"+str(partition_count))
-        t2_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"_t2_p"+str(partition_count))
+        t1_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"t1_p"+str(partition_count))
+        t2_partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label+"t2_p"+str(partition_count))
         with open(t1_partition_path + ".pkl", "wb") as pt1handle:
             pickle.dump(t1_partition_data, pt1handle)
         with open(t2_partition_path + ".pkl", "wb") as pt2handle:
             pickle.dump(t2_partition_data, pt2handle)
-        pd.DataFrame(list(zip(files[start:], labels[start:]))).to_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + partition_label + "_p" + str(partition_count) + ".csv", header=None, index=False)
-        print("Created Partition", partition_label+"_p"+str(partition_count), "with", file_count, "files and tracker csv with " + str(len(files[start:])) + " files.")
+        pd.DataFrame(list(zip(files[start:], labels[start:]))).to_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + partition_label + "p" + str(partition_count) + ".csv", header=None, index=False)
+        print("Created Partition", partition_label+"p"+str(partition_count), "with", file_count, "files and tracker csv with " + str(len(files[start:])) + " files.")
         partition_count += 1
     return partition_count
 
 
 def get_partition_data(type, fold, partition_count, tier):
-    partition_label = type + "_" + str(fold) + "_" + tier + "_p" + str(partition_count)
-    print("Loading partitioned data for Fold-"+str(fold+1)+". . .", partition_label)
+    if type is not None:
+        partition_label = type + "_" + str(fold) + "_" + tier + "_p" + str(partition_count)
+    else:
+        partition_label = tier + "_p" + str(partition_count)
+
+    print("Loading partition:", partition_label)
     partition_path = os.path.join(cnst.DATA_SOURCE_PATH, partition_label + ".pkl")
 
     if not os.path.isfile(partition_path):

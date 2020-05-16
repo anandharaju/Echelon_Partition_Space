@@ -85,7 +85,7 @@ def preprocess_by_section(wpartition, spartition, file_list, max_len, sections, 
 
                 corpus.append(combined)
                 if len(combined) > max_len:
-                    print("[CAUTION: LOSS_OF_DATA] Section Byte Map + Sections : exceeded max sample length by " + str(
+                    print("[CAUTION: LOSS_OF_DATA] Combined Sections : exceeded max sample length by " + str(
                         len(combined) - max_len) + " bytes")
 
             except Exception as e:

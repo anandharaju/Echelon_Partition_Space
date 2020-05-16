@@ -18,6 +18,7 @@ from collections import OrderedDict
 import os
 import pickle
 from analyzers.collect_exe_files import partition_pkl_files
+import sklearn.utils
 
 
 def generate_cv_folds_data(dataset_path):
@@ -29,7 +30,7 @@ def generate_cv_folds_data(dataset_path):
     # Analyze Data set - Required only for Huawei pickle files
     if cnst.GENERATE_BENIGN_MALWARE_FILES: analyzer.analyze_dataset(cnst.CHECK_FILE_SIZE)
     # Load Data set info from CSV files
-    adata, _, _ = analyzer.load_dataset(dataset_path)
+    adata, _, _ = analyzer. load_dataset(dataset_path)
 
     # SPLIT TRAIN AND TEST DATA
     # Save them in files -- fold wise
@@ -58,47 +59,65 @@ def generate_cv_folds_data(dataset_path):
     return cv_obj
 
 
+def partition_dataset(dataset_path):
+    adata, _, _ = analyzer.load_dataset(dataset_path)
+    partitioningdata = analyzer.ByteData()
+    if not os.path.exists(cnst.DATA_SOURCE_PATH):
+        os.makedirs(cnst.DATA_SOURCE_PATH)
+
+    skf = StratifiedKFold(n_splits=cnst.PARTITIONS, shuffle=True, random_state=cnst.RANDOM_SEED)
+    pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_partition_pkl.csv", header=None, index=None)
+    for index, (_, partition_indices) in enumerate(skf.split(adata.xdf, adata.ydf)):
+        temp_partitioningdata = pd.concat([adata.xdf[partition_indices], adata.ydf[partition_indices]], axis=1)
+        temp_partitioningdata = sklearn.utils.shuffle(temp_partitioningdata)
+        temp_partitioningdata = temp_partitioningdata.reset_index(drop=True)
+        temp_partitioningdata.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_partition_pkl.csv", header=None, index=None, mode="a")
+
+    partitioningdf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "master_partition_pkl.csv", header=None)
+    pcount = partition_pkl_files(None, None, partitioningdf.iloc[:, 0], partitioningdf.iloc[:, 1])
+    pd.DataFrame([{"master": pcount}]).to_csv(os.path.join(cnst.DATA_SOURCE_PATH, "master_partition_tracker.csv"), index=False)
+    return pcount
+
+
 def train_predict(model_idx, dataset_path=None):
     tst = time.time()
     print("\nSTART TIME  [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
-    cv_obj = generate_cv_folds_data(dataset_path)
+    # cv_obj = generate_cv_folds_data(dataset_path)
+
+    m_pcount = None
+    if cnst.REGENERATE_DATA_AND_PARTITIONS:
+        m_pcount = partition_dataset(dataset_path)
+        cpt = time.time()
+        print("\nTIME ELAPSED FOR GENERATING PARTITIONS:", str(int(cpt - tst) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
+    else:
+        m_pcount = pd.read_csv(os.path.join(cnst.DATA_SOURCE_PATH, "master_partition_tracker.csv"))["master"][0]
+
+    tst_pcount = int(m_pcount * cnst.TST_SET_SIZE)
+    val_pcount = int((m_pcount - tst_pcount) * cnst.VAL_SET_SIZE)
+    trn_pcount = m_pcount - (tst_pcount + val_pcount)
 
     for fold_index in range(cnst.CV_FOLDS):
-        traindata = cv_obj.train_data[fold_index]
-        valdata = cv_obj.val_data[fold_index]
-        testdata = cv_obj.test_data[fold_index]
+        tst_partitions = np.arange(tst_pcount) + (fold_index * tst_pcount)
+        trn_val_partitions = [x for x in range(m_pcount) if x not in tst_partitions]
+        val_partitions = trn_val_partitions[-1*val_pcount:]
+        trn_partitions = [x for x in trn_val_partitions if x not in val_partitions]
+        pd.DataFrame([{"train": len(trn_partitions), "val": val_partitions, "test": tst_partitions}]).to_csv(os.path.join(cnst.DATA_SOURCE_PATH, "partition_tracker_" + str(fold_index) + ".csv"), index=False)
 
-        if fold_index == 0:
-            train_len = traindata.xdf.shape[0]
-            val_len = valdata.xdf.shape[0]
-            test_len = testdata.xdf.shape[0]
-
-        print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> [ CV-FOLD " + str(fold_index + 1) + "/" + str(cnst.CV_FOLDS) + " ]", "Training: " + str(train_len), "Validation: " + str(val_len), "Testing: " + str(test_len))
+        print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> [ CV-FOLD " + str(fold_index + 1) + "/" + str(cnst.CV_FOLDS) + " ]", "Training: " + str(len(trn_partitions)), "Validation: " + str(len(val_partitions)), "Testing: " + str(len(tst_partitions)))
         if fold_index not in cnst.RUN_FOLDS:
             continue
 
-        if cnst.REGENERATE_PARTITION:
-            if not os.path.exists(cnst.DATA_SOURCE_PATH):
-                os.makedirs(cnst.DATA_SOURCE_PATH)
-
-            trn_count = partition_pkl_files("train", fold_index, traindata.xdf.values, traindata.ydf.values)
-            val_count = partition_pkl_files("val",   fold_index, valdata.xdf.values, valdata.ydf.values)
-            tst_count = partition_pkl_files("test",  fold_index, testdata.xdf.values, testdata.ydf.values)
-            pd.DataFrame([{"train": trn_count, "val": val_count, "test": tst_count}]).to_csv(os.path.join(cnst.DATA_SOURCE_PATH, "partition_tracker_" + str(fold_index) + ".csv"), index=False)
-
-            cpt = time.time()
-            print("\nTIME ELAPSED FOR GENERATING PARTITIONS:", str(int(cpt - tst) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
-
         if not cnst.SKIP_ENTIRE_TRAINING:
             cpt = time.time()
-            train.init(model_idx, traindata, valdata, fold_index)
+            train.init(model_idx, trn_partitions, val_partitions, fold_index)
             print("\nTIME ELAPSED FOR TRAINING:", str(int(time.time() - cpt) / 60), " minutes   [", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "]")
         else:
             print("SKIPPED: Tier 1&2 Training Process")
 
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************")
         cpt = time.time()
-        pred_cv_obj = predict.init(model_idx, testdata, cv_obj, fold_index)
+        cv_obj = cv_info()
+        pred_cv_obj = predict.init(model_idx, tst_partitions, cv_obj, fold_index)
         if pred_cv_obj is not None:
             cv_obj = pred_cv_obj
         else:

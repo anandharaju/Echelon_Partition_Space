@@ -330,7 +330,7 @@ def benchmark_tier1(model_idx, ptier1, fold_index, recon_fpr):
     # predict_tier1(model_idx, ptier1, fold_index)
 
 
-def init(model_idx, testdata, cv_obj, fold_index):
+def init(model_idx, test_partitions, cv_obj, fold_index):
     # TIER-1 PREDICTION OVER TEST DATA
     partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
     print("\nPrediction on Testing Data - TIER1       # Partitions:", partition_tracker_df["test"][0])
@@ -349,14 +349,13 @@ def init(model_idx, testdata, cv_obj, fold_index):
     predict_t1_test_data_all = pObj(cnst.TIER2, None, None, None)
     predict_t1_test_data_all.thd = thd1
 
-    for pcount in range(0, partition_tracker_df["test"][0]):
-        tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "test_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
-        testdata.xdf, testdata.ydf = tst_datadf.iloc[:, 0], tst_datadf.iloc[:, 1]
+    for pcount in test_partitions:
+        tst_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p" + str(pcount) + ".csv", header=None)
 
-        predict_t1_test_data_partition = pObj(cnst.TIER1, None, testdata.xdf.values, testdata.ydf.values)
+        predict_t1_test_data_partition = pObj(cnst.TIER1, None, tst_datadf.iloc[:, 0].values, tst_datadf.iloc[:, 1].values)
         predict_t1_test_data_partition.thd = thd1
         predict_t1_test_data_partition.boosting_upper_bound = boosting_bound
-        predict_t1_test_data_partition.partition = get_partition_data("test", fold_index, pcount, "t1")
+        predict_t1_test_data_partition.partition = get_partition_data(None, None, pcount, "t1")
         predict_t1_test_data_partition = predict_tier1(model_idx, predict_t1_test_data_partition, fold_index)
 
         del predict_t1_test_data_partition.partition  # Release Memory

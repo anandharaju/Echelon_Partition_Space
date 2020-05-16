@@ -210,7 +210,7 @@ def train_tier2(args):
 # ######################################################################################################################
 
 
-def init(model_idx, traindata, valdata, fold_index):
+def init(model_idx, train_partitions, val_partitions, fold_index):
     t_args = DefaultTrainArguments()
 
     # limit gpu memory
@@ -225,21 +225,17 @@ def init(model_idx, traindata, valdata, fold_index):
     # print("######################################   TRAINING TIER-1  ###############################################")
     partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
     if not cnst.SKIP_TIER1_TRAINING:
-        for pcount in range(0, partition_tracker_df["train"][0]):
-            tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "train_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
-            traindata.xdf, traindata.ydf = tr_datadf.iloc[:, 0], tr_datadf.iloc[:, 1]
-            t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = traindata.xdf.values, None, traindata.ydf.values, None
+        for tp_idx in train_partitions:
+            tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p"+str(tp_idx)+".csv", header=None)
+            t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = tr_datadf.iloc[:, 0].values, None, tr_datadf.iloc[:, 1].values, None
             t_args.t1_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t1_y_train), t_args.t1_y_train)  # Class Imbalance Tackling - Setting class weights
             t_args.t1_model_base = get_model1(t_args)
-            
-            # ~~~~~~~~~~~~~~~~~~~
-            t_args.train_partition = get_partition_data("train", fold_index, pcount, "t1")
-            train_tier1(t_args)
 
+            t_args.train_partition = get_partition_data(None, None, tp_idx, "t1")
+            train_tier1(t_args)
             del t_args.train_partition  # Release Memory
             gc.collect()
 
-            # ~~~~~~~~~~~~~~~~~~~
             cnst.USE_PRETRAINED_FOR_TIER1 = False
     else:
         cnst.USE_PRETRAINED_FOR_TIER1 = False  # Use model trained through Echelon
@@ -253,11 +249,10 @@ def init(model_idx, traindata, valdata, fold_index):
     if not cnst.SKIP_TIER1_VALIDATION:
         print("*** Prediction over Validation data in TIER-1 to select THD1 and Boosting Bound")
         pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_" + str(fold_index) + "_pkl.csv", header=None, index=None)
-        for pcount in range(0, partition_tracker_df["val"][0]):
-            val_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "val_"+str(fold_index)+"_p"+str(pcount)+".csv", header=None)
-            valdata.xdf, valdata.ydf = val_datadf.iloc[:, 0], val_datadf.iloc[:, 1]
-            predict_t1_val_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, valdata.xdf.values, valdata.ydf.values)
-            predict_t1_val_data.partition = get_partition_data("val", fold_index, pcount, "t1")
+        for vp_idx in val_partitions:
+            val_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p"+str(vp_idx)+".csv", header=None)
+            predict_t1_val_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, val_datadf.iloc[:, 0].values, val_datadf.iloc[:, 1].values)
+            predict_t1_val_data.partition = get_partition_data(None, None, vp_idx, "t1")
             predict_t1_val_data = predict.predict_tier1(model_idx, predict_t1_val_data, fold_index)
             predict_t1_val_data = predict.select_thd_get_metrics_bfn_mfp(cnst.TIER1, predict_t1_val_data)
 
@@ -284,14 +279,13 @@ def init(model_idx, traindata, valdata, fold_index):
     if not cnst.SKIP_TIER1_TRAINING_PRED:
         print("\n*** Prediction over Training data in TIER-1 to generate B1 data for TIER-2 Training")
         pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None, index=None)
-        for pcount in range(0, partition_tracker_df["train"][0]):
-            tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
-            traindata.xdf, traindata.ydf = tr_datadf.iloc[:, 0], tr_datadf.iloc[:, 1]
+        for tp_idx in train_partitions:
+            tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p" + str(tp_idx) + ".csv", header=None)
 
-            predict_t1_train_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, traindata.xdf.values, traindata.ydf.values)
+            predict_t1_train_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, tr_datadf.iloc[:, 0].values, tr_datadf.iloc[:, 1].values)
             predict_t1_train_data.thd = max_val_thd1
             predict_t1_train_data.boosting_upper_bound = min_val_boosting_bound
-            predict_t1_train_data.partition = get_partition_data("train", fold_index, pcount, "t1")
+            predict_t1_train_data.partition = get_partition_data(None, None, tp_idx, "t1")
             predict_t1_train_data = predict.predict_tier1(model_idx, predict_t1_train_data, fold_index)
             predict_t1_train_data = predict.select_thd_get_metrics_bfn_mfp(cnst.TIER1, predict_t1_train_data)
 
@@ -452,7 +446,7 @@ def init(model_idx, traindata, valdata, fold_index):
 
     print("************************ TIER 2 TRAINING - ENDED   ****************************")
     # return None, None, thd2, q_sections_selected, t_args.train_section_map
-    pd.DataFrame([{"thd1": max_val_thd1, "thd2": thd2, "boosting_bound": min_boosting_bound}]).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"), index=False)
+    pd.DataFrame([{"thd1": max_val_thd1, "thd2": thd2, "boosting_bound": min_val_boosting_bound}]).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"), index=False)
     pd.DataFrame(q_sections_selected).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "qualified_sections_" + str(fold_index) + ".csv"), header=None, index=False)
     return  # predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
 

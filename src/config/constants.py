@@ -25,8 +25,7 @@ ATI_PREDICT_VERBOSE = VERBOSE_1
 
 #####################################################################################
 USE_GPU = True
-REGENERATE_DATA = False
-REGENERATE_PARTITION = False
+REGENERATE_DATA_AND_PARTITIONS = False
 DO_SUBSAMPLING = False
 
 PROJECT_ROOT = os.getcwdb().decode("utf-8").split("/")[-2] if LINUX_ENV else os.getcwdb().decode("utf-8").split("\\")[-2]
@@ -34,6 +33,7 @@ USE_PRETRAINED_FOR_TIER1 = True  # True:Malconv False:Echelon
 USE_PRETRAINED_FOR_TIER2 = True
 PERFORM_B2_BOOSTING = True
 VAL_SET_SIZE = 0.2
+TST_SET_SIZE = 0.2
 
 EPOCHS = 1
 # TIER-1
@@ -41,8 +41,8 @@ TIER1 = "TIER1"
 TIER1_EPOCHS = EPOCHS
 TIER1_TARGET_FPR = 0.1
 
-SKIP_ENTIRE_TRAINING = False
-SKIP_TIER1_TRAINING = False
+SKIP_ENTIRE_TRAINING = True
+SKIP_TIER1_TRAINING = True
 
 SKIP_TIER1_VALIDATION = False           # Generates Val B1
 SKIP_TIER1_TRAINING_PRED = False        # Generates Train B1
@@ -61,11 +61,12 @@ OVERALL_TARGET_FPR = 0.1
 
 # CROSS VALIDATION
 CV_FOLDS = 5
+PARTITIONS = 100
 INITIAL_FOLD = 0
 RANDOMIZE = False  # Set Random seed for True
 
 #  DATA SOURCE
-MAX_PARTITION_SIZE = 1 * 2 ** 30
+MAX_PARTITION_SIZE = 50 * 2 ** 20
 MAX_SECT_BYTE_MAP_SIZE = 2000
 MAX_FILE_SIZE_LIMIT = 2**20  # 204800
 MAX_FILE_COUNT_LIMIT = None
@@ -76,7 +77,7 @@ USE_POOLING_LAYER = True
 PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/' + PROJECT_ROOT if LINUX_ENV else 'D:\\03_GitWorks\\'+PROJECT_ROOT
 DATA_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/partitions/' + PROJECT_ROOT if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\partitions\\xs_partition\\'
 PKL_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/pickles/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\pickles\\'
-ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'ds1_pkl.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
+ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'xs_pkl.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
 BENIGN_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_benign_pkl.csv'
 MALWARE_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_malware_pkl.csv'
 TRAINING_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'training.csv'
