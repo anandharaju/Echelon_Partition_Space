@@ -10,6 +10,9 @@ seaborn 0.9.1
 pandas
 numpy 1.16.3
 
+numba
+nvidia-ml-py3
+
 # Issues In-progress:
 Activation Trend Identification:
 * Section is found - but data is empty (Section_size_byte = 0) and end_offset = -1
