@@ -14,14 +14,14 @@ TIER1_PRETRAINED_MODEL = "ember_malconv.h5"
 TIER2_PRETRAINED_MODEL = "ember_malconv.h5"
 BENIGN = 0
 MALWARE = 1
-T1_TRAIN_BATCH_SIZE = 128
+T1_TRAIN_BATCH_SIZE = 64
 T2_TRAIN_BATCH_SIZE = 32
 PREDICT_BATCH_SIZE = 128
 
 T1_VERBOSE = VERBOSE_1
 T2_VERBOSE = VERBOSE_1
 PREDICT_VERBOSE = VERBOSE_1
-ATI_PREDICT_VERBOSE = VERBOSE_1
+ATI_PREDICT_VERBOSE = VERBOSE_0
 
 #####################################################################################
 USE_GPU = True
@@ -37,10 +37,10 @@ PERFORM_B2_BOOSTING = True
 VAL_SET_SIZE = 0.2
 TST_SET_SIZE = 0.2
 
-EPOCHS = 1
+EPOCHS = 5
 # TIER-1
 TIER1 = "TIER1"
-TIER1_EPOCHS = 10
+TIER1_EPOCHS = 1
 TIER1_TARGET_FPR = 0.1
 
 SKIP_ENTIRE_TRAINING = False
@@ -56,7 +56,7 @@ SKIP_TIER2_TRAINING = False
 
 # TIER-2
 TIER2 = "TIER2"
-TIER2_EPOCHS = 10
+TIER2_EPOCHS = 1
 TIER2_TARGET_FPR = 0
 
 OVERALL_TARGET_FPR = 0.1
@@ -80,14 +80,14 @@ USE_POOLING_LAYER = True
 PROJECT_BASE_PATH = '/home/aduraira/projects/def-wangk/aduraira/' + PROJECT_ROOT if LINUX_ENV else 'D:\\03_GitWorks\\'+PROJECT_ROOT
 DATA_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/partitions/' + PROJECT_ROOT if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\partitions\\xs_partition\\'
 PKL_SOURCE_PATH = '/home/aduraira/projects/def-wangk/aduraira/pickles/' if LINUX_ENV else 'D:\\08_Dataset\\Internal\\mar2020\\pickles\\'
-ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'xs_pkl.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
+ALL_FILE = PROJECT_BASE_PATH  + ESC + 'data' + ESC + 'ds1_pkl.csv'  # 'balanced_pkl.csv'  # small_pkl_1_1.csv'
 BENIGN_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_benign_pkl.csv'
 MALWARE_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'medium_malware_pkl.csv'
 TRAINING_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'training.csv'
 TESTING_FILE = PROJECT_BASE_PATH + ESC + 'data' + ESC + 'testing.csv'
 GENERATE_BENIGN_MALWARE_FILES = False
 CHECK_FILE_SIZE = False
-#PATHS = ['D:\\08_Dataset\\Huawei_DS\\data\\mal\\00', 'D:\\08_Dataset\\Huawei_DS\\data\\mal\\01', 'D:\\08_Dataset\\Huawei_DS\\data\\clean\\00', 'D:\\08_Dataset\\Huawei_DS\\data\\clean\\01']
+
 TIER1_MODELS = ['echelon_byte', 'echelon_featuristic', 'echelon_fusion']
 TIER2_MODELS = ['echelon_byte_2', 'echelon_featuristic_2', 'echelon_fusion_2']
 EXECUTION_TYPE = ['BYTE', 'FEATURISTIC', 'FUSION']
@@ -117,36 +117,3 @@ SECTION_SUPPORT = PROJECT_BASE_PATH + ESC + "out" + ESC + "result" + ESC + "sect
 TAIL = "OVERLAY"
 PADDING = "PADDING"
 LEAK = "SECTIONLESS"
-
-'''
-# SECTION_STATS_HEADER = 'type,header,text,data,rsrc,pdata,rdata,padding\n'
-SECTION_STATS_HEADER = 'type,header,text,data,pdata,rsrc,rdata,edata,idata,bss,reloc,debug,sdata,xdata,hdata,xdata,' \
-                       'npdata,itext,apiset,qtmetad,textbss,its,extjmp,cdata,detourd,cfguard,guids,sdbid,extrel,' \
-                       'ndata,detourc,shared,rodata,gfids,didata,pr0,tls,imrsiv,stab,mrdata,sxdata,orpc,c2r,nep,' \
-                       'shdata,srdata,didat,stabstr,bldvar,isoapis\n'
-
-PCS = ['.header', '.text', '.data', '.pdata', '.rsrc', '.rdata', '.edata', '.idata', '.bss', '.reloc', '.debug', '.sdata', '.xdata', '.hdata', '.xdata', '.npdata', '.itext', '.apiset', '.qtmetad', '.textbss', '.its', '.extjmp', '.cdata', '.detourd', '.cfguard', '.guids', '.sdbid', '.extrel', '.ndata', '.detourc', '.shared', '.rodata', '.gfids', '.didata', '.pr0', '.tls', '.imrsiv', '.stab', '.mrdata', '.sxdata', '.orpc', '.c2r', '.nep', '.shdata', '.srdata', '.didat', '.stabstr', '.bldvar', '.isoapis']
-PCS_KEYS = ['header', 'text', 'data', 'pdata', 'rsrc', 'rdata', 'edata', 'idata', 'bss', 'reloc', 'debug', 'sdata', 'xdata', 'hdata', 'xdata', 'npdata', 'itext', 'apiset', 'qtmetad', 'textbss', 'its', 'extjmp', 'cdata', 'detourd', 'cfguard', 'guids', 'sdbid', 'extrel', 'ndata', 'detourc', 'shared', 'rodata', 'gfids', 'didata', 'pr0', 'tls', 'imrsiv', 'stab', 'mrdata', 'sxdata', 'orpc', 'c2r', 'nep', 'shdata', 'srdata', 'didat', 'stabstr', 'bldvar', 'isoapis']
-'''
-'''
-FILES = [  # 'D:\\03_GitWorks\\echelon\\out\\result\\FP.csv',
-           # 'D:\\03_GitWorks\\echelon\\out\\result\\FN.csv',
-         PROJECT_BASE_PATH+'\\out\\result\\benign.csv',
-         PROJECT_BASE_PATH+'\\out\\result\\malware.csv'
-]
-'''
-'''
-SECTION_STAT_FILES = [  # "D:\\03_GitWorks\\echelon\\out\\result\\FP_section_stats.csv",
-                        # "D:\\03_GitWorks\\echelon\\out\\result\\FN_section_stats.csv",
-                      PROJECT_BASE_PATH+"\\out\\result\\benign_section_stats.csv",
-                      PROJECT_BASE_PATH+"\\out\\result\\malware_section_stats.csv"
-]
-'''
-
-'''
-file_type = ['BENIGN', 'MALWARE']  # , 'FP', 'FN']
-plot_file = "D:\\03_GitWorks\\echelon\\out\\PE_Section_Statistics.png"
-plot_file_no_fp = "D:\\03_GitWorks\\echelon\\out\\PE_Section_Statistics_NO_fp.png"
-intuition1 = "D:\\03_GitWorks\\echelon\\out\\intuition1.png"
-intuition2 = "D:\\03_GitWorks\\echelon\\out\\x.png"
-'''

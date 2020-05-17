@@ -46,7 +46,39 @@ if not cnst.USE_GPU:
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
+def get_model_memory_usage(batch_size, model):
+    import numpy as np
+    from keras import backend as K
+
+    shapes_mem_count = 0
+    internal_model_mem_count = 0
+    for l in model.layers:
+        layer_type = l.__class__.__name__
+        if layer_type == 'Model':
+            internal_model_mem_count += get_model_memory_usage(batch_size, l)
+        single_layer_mem = 1
+        for s in l.output_shape:
+            if s is None:
+                continue
+            single_layer_mem *= s
+        shapes_mem_count += single_layer_mem
+
+    trainable_count = np.sum([K.count_params(p) for p in set(model.trainable_weights)])
+    non_trainable_count = np.sum([K.count_params(p) for p in set(model.non_trainable_weights)])
+
+    number_size = 4.0
+    if K.floatx() == 'float16':
+         number_size = 2.0
+    if K.floatx() == 'float64':
+         number_size = 8.0
+
+    total_memory = number_size*(batch_size*shapes_mem_count + trainable_count + non_trainable_count)
+    gbytes = np.round(total_memory / (1024.0 ** 3), 3) + internal_model_mem_count
+    return gbytes
+
+
 def train(args):
+    print("Memory Required:", get_model_memory_usage(args.t1_batch_size, args.t1_model_base))
     train_steps = len(args.t1_x_train) // args.t1_batch_size
     args.t1_train_steps = train_steps - 1 if len(args.t1_x_train) % args.t1_batch_size == 0 else train_steps + 1
 
@@ -205,20 +237,22 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
     # print("######################################   TRAINING TIER-1  ###############################################")
     partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
     if not cnst.SKIP_TIER1_TRAINING:
-        for tp_idx in train_partitions:
-            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
-            tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p"+str(tp_idx)+".csv", header=None)
-            t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = tr_datadf.iloc[:, 0].values, None, tr_datadf.iloc[:, 1].values, None
-            t_args.t1_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t1_y_train), t_args.t1_y_train)  # Class Imbalance Tackling - Setting class weights
-            t_args.t1_model_base = get_model1(t_args)
+        for epoch in range(cnst.EPOCHS):  # External Partition Purpose
+            for tp_idx in [0]:  # train_partitions:
+                tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p" + str(tp_idx) + ".csv", header=None)
+                t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = tr_datadf.iloc[:, 0].values, None, tr_datadf.iloc[:, 1].values, None
+                t_args.t1_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t1_y_train), t_args.t1_y_train)  # Class Imbalance Tackling - Setting class weights
+                t_args.t1_model_base = get_model1(t_args)
 
-            t_args.train_partition = get_partition_data(None, None, tp_idx, "t1")
-            train_tier1(t_args)
-            del t_args.train_partition  # Release Memory
-            gc.collect()
+                print("GPU Consumption before loading partition:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
+                t_args.train_partition = get_partition_data(None, None, tp_idx, "t1")
+                print("GPU Consumption after loading partition:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
+                train_tier1(t_args)
+                del t_args.train_partition  # Release Memory
+                gc.collect()
 
-            cnst.USE_PRETRAINED_FOR_TIER1 = False
-            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
+                cnst.USE_PRETRAINED_FOR_TIER1 = False
+                print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     else:
         cnst.USE_PRETRAINED_FOR_TIER1 = False  # Use model trained through Echelon
         print("SKIPPED: Tier-1 Training process")
@@ -356,22 +390,23 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         # Retrieve TPR at FPR=0 or relax till 1%
         if not cnst.SKIP_TIER2_TRAINING:
             print("Tier-2 Training over Train B1 [# Partitions: "+str(b1tr_partition_count)+"]")
-            for pcount in range(0, b1tr_partition_count):
-                print("Tier-2 Training over Train B1 partition:", pcount)
-                print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
-                b1traindatadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
-                t_args.t2_x_train, t_args.t2_y_train = b1traindatadf.iloc[:, 0], b1traindatadf.iloc[:, 1]
-                t_args.whole_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t1")
-                t_args.section_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t2")
-                t_args.t2_class_weights = class_weight.compute_class_weight('balanced', np.unique(b1traindatadf.iloc[:, 1]), b1traindatadf.iloc[:, 1])  # Class Imbalance Tackling - Setting class weights
+            for epoch in range(cnst.EPOCHS):
+                for pcount in range(0, b1tr_partition_count):
+                    print("Tier-2 Training over Train B1 partition:", pcount)
+                    print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
+                    b1traindatadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+                    t_args.t2_x_train, t_args.t2_y_train = b1traindatadf.iloc[:, 0], b1traindatadf.iloc[:, 1]
+                    t_args.whole_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t1")
+                    t_args.section_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t2")
+                    t_args.t2_class_weights = class_weight.compute_class_weight('balanced', np.unique(b1traindatadf.iloc[:, 1]), b1traindatadf.iloc[:, 1])  # Class Imbalance Tackling - Setting class weights
 
-                train_tier2(t_args)
+                    train_tier2(t_args)
 
-                del t_args.whole_b1_train_partition  # Release Memory
-                del t_args.section_b1_train_partition  # Release Memory
-                gc.collect()
-                cnst.USE_PRETRAINED_FOR_TIER2 = False
-                print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
+                    del t_args.whole_b1_train_partition  # Release Memory
+                    del t_args.section_b1_train_partition  # Release Memory
+                    gc.collect()
+                    cnst.USE_PRETRAINED_FOR_TIER2 = False
+                    print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
         else:
             cnst.USE_PRETRAINED_FOR_TIER2 = False  # Use model trained through Echelon
             print("SKIPPED: Tier-2 Training Process")
