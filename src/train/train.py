@@ -7,6 +7,7 @@ from os.path import join
 import argparse
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.models import load_model, save_model
+from keras.utils import multi_gpu_model
 from utils import utils
 import model_skeleton.featuristic as featuristic
 import model_skeleton.malfusion as malfusion
@@ -27,6 +28,13 @@ import random
 from plots.plots import display_probability_chart
 from analyzers.collect_exe_files import get_partition_data, partition_pkl_files
 import gc
+from keras import backend as K
+import nvidia_smi
+
+nvidia_smi.nvmlInit()
+handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
+print("Initial GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
 
 
 # ####################################
@@ -46,7 +54,7 @@ def train(args):
         val_steps = len(args.t1_x_val) // args.t1_batch_size
         args.t1_val_steps = val_steps - 1 if len(args.t1_x_val) % args.t1_batch_size == 0 else val_steps + 1
 
-    args.t1_ear = EarlyStopping(monitor='acc', patience=10)
+    args.t1_ear = EarlyStopping(monitor='acc', patience=3)
     args.t1_mcp = ModelCheckpoint(join(args.save_path, args.t1_model_name),
                                monitor="acc", save_best_only=args.save_best, save_weights_only=False)
 
@@ -73,7 +81,7 @@ def train_by_section(args):
         val_steps = len(args.t2_x_val) // args.t2_batch_size
         args.t2_val_steps = val_steps - 1 if len(args.t2_x_val) % args.t2_batch_size == 0 else val_steps + 1
 
-    args.t2_ear = EarlyStopping(monitor='acc', patience=10)
+    args.t2_ear = EarlyStopping(monitor='acc', patience=3)
     args.t2_mcp = ModelCheckpoint(join(args.save_path, args.t2_model_name),
                                monitor="acc", save_best_only=args.save_best, save_weights_only=False)
 
@@ -94,34 +102,6 @@ def train_by_section(args):
     return history
 
 
-def train_featuristic(model, model_name, x_train, x_val, y_train, y_val, class_weights, save_path,  batch_size, verbose, epochs, shuffle, features_to_drop=None, save_best=True):
-    history = model.fit_generator(
-        utils.data_generator_by_features(x_train, y_train, batch_size, shuffle, features_to_drop)
-        , class_weight=class_weights
-        , steps_per_epoch=len(x_train)
-        , epochs=epochs
-        , verbose=verbose
-        , callbacks=[ear, mcp]
-        , validation_data=utils.data_generator_by_features(x_val, y_val, batch_size, shuffle, features_to_drop)
-        , validation_steps=len(x_val)
-    )
-    return history
-
-
-def train_fusion(model, model_name, x_train, x_val, y_train, y_val, class_weights, max_len, save_path, batch_size, verbose, epochs, shuffle, save_best=True):
-    history = model.fit_generator(
-        utils.data_generator_by_fusion(x_train, y_train, max_len, batch_size, shuffle)
-        , class_weight=class_weights
-        , steps_per_epoch=len(x_train)
-        , epochs=epochs
-        , verbose=verbose
-        , callbacks=[ear, mcp]
-        , validation_data=utils.data_generator_by_fusion(x_val, y_val, max_len, batch_size, shuffle)
-        , validation_steps=len(x_val)
-    )
-    return history
-
-
 def get_model1(args):
     # prepare TIER-1 model
     model1 = None
@@ -132,6 +112,9 @@ def get_model1(args):
         else:
             print("[ CAUTION ] : Resuming with old model")
             model1 = load_model(args.model_path + args.t1_model_name)
+        if cnst.NUM_GPU > 1:
+            model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
+        # model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
     else:
         if args.byte:
             model1 = echelon.model(args.t1_max_len, args.t1_win_size)
@@ -140,19 +123,19 @@ def get_model1(args):
         elif args.fusion:
             model1 = malfusion.model(args.max_len, args.win_size)
 
-        # ##################################################################################################################
-        #                                                  Optimization
-        # ##################################################################################################################
-        # optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-        optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
-        model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        # ##################################################################################################################
-        #                                             Hyper-parameter Tuning
-        # ##################################################################################################################
-        # param_dict = {'lr': [0.00001, 0.0001, 0.001, 0.1]}
-        # model_gs = GridSearchCV(model, param_dict, cv=10)
-
-    # model1.summary()
+    # ##################################################################################################################
+    #                                                  Optimization
+    # ##################################################################################################################
+    # optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+    model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    # ##################################################################################################################
+    #                                             Hyper-parameter Tuning
+    # ##################################################################################################################
+    # param_dict = {'lr': [0.00001, 0.0001, 0.001, 0.1]}
+    # model_gs = GridSearchCV(model, param_dict, cv=10)
+    print("GPU Consumption after loading Model1:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
+    model1.summary()
     return model1
 
 
@@ -179,6 +162,7 @@ def get_model2(args):
         optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
         model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
+    print("GPU Consumption after loading Model2:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     # model2.summary()
     return model2
 
@@ -187,8 +171,6 @@ def train_tier1(args):
     print("************************ TIER 1 TRAINING - STARTED ****************************       # Samples:", len(args.t1_x_train))
     if args.tier1:
         if args.byte:             history = train(args)
-        if args.featuristic:      history = train_featuristic(args)
-        if args.fusion:           history = train_fusion(args)
     print("************************ TIER 1 TRAINING - ENDED   ****************************")
 
 
@@ -196,8 +178,6 @@ def train_tier2(args):
     # print("************************ TIER 2 TRAINING - STARTED ****************************")
     if args.tier2:
         if args.byte:             section_history = train_by_section(args)
-        if args.featuristic:      history = train_featuristic(args)
-        if args.fusion:           history = train_fusion(args)
     # print("************************ TIER 2 TRAINING - ENDED   ****************************")
 
 
@@ -226,6 +206,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
     partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
     if not cnst.SKIP_TIER1_TRAINING:
         for tp_idx in train_partitions:
+            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
             tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p"+str(tp_idx)+".csv", header=None)
             t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = tr_datadf.iloc[:, 0].values, None, tr_datadf.iloc[:, 1].values, None
             t_args.t1_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t1_y_train), t_args.t1_y_train)  # Class Imbalance Tackling - Setting class weights
@@ -237,9 +218,13 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
             gc.collect()
 
             cnst.USE_PRETRAINED_FOR_TIER1 = False
+            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     else:
         cnst.USE_PRETRAINED_FOR_TIER1 = False  # Use model trained through Echelon
         print("SKIPPED: Tier-1 Training process")
+
+    if cnst.ONLY_TIER1_TRAINING:
+        return
 
     # TIER-1 PREDICTION OVER TRAINING DATA [Select THD1]
     min_boosting_bound = None
@@ -250,6 +235,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         print("*** Prediction over Validation data in TIER-1 to select THD1 and Boosting Bound")
         pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_" + str(fold_index) + "_pkl.csv", header=None, index=None)
         for vp_idx in val_partitions:
+            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
             val_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p"+str(vp_idx)+".csv", header=None)
             predict_t1_val_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, val_datadf.iloc[:, 0].values, val_datadf.iloc[:, 1].values)
             predict_t1_val_data.partition = get_partition_data(None, None, vp_idx, "t1")
@@ -264,6 +250,8 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
 
             val_b1datadf = pd.concat([pd.DataFrame(predict_t1_val_data.xB1), pd.DataFrame(predict_t1_val_data.yB1)], axis=1)
             val_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
+
+            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
 
         val_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None)
         b1val_partition_count = partition_pkl_files("b1_val", fold_index, val_b1datadf.iloc[:, 0], val_b1datadf.iloc[:, 1])
@@ -280,6 +268,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         print("\n*** Prediction over Training data in TIER-1 to generate B1 data for TIER-2 Training")
         pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None, index=None)
         for tp_idx in train_partitions:
+            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
             tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p" + str(tp_idx) + ".csv", header=None)
 
             predict_t1_train_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, tr_datadf.iloc[:, 0].values, tr_datadf.iloc[:, 1].values)
@@ -294,6 +283,8 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
 
             train_b1data_partition_df = pd.concat([pd.DataFrame(predict_t1_train_data.xB1), pd.DataFrame(predict_t1_train_data.yB1)], axis=1)
             train_b1data_partition_df.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None, index=None, mode='a')
+
+            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
 
         train_b1data_all_df = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None)
         b1_partition_tracker = pd.read_csv(os.path.join(cnst.DATA_SOURCE_PATH, "b1_partition_tracker_" + str(fold_index) + ".csv"))
@@ -316,7 +307,9 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
     if not cnst.SKIP_ATI_PROCESSING:
         print("\nATI - PROCESSING BENIGN AND MALWARE FILES\t\t", "B1 FILES COUNT:", np.shape(train_b1data_all_df.iloc[:, 1])[0], "[# Partitions: "+str(b1tr_partition_count)+"]")
         print("-----------------------------------------")
+        print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
         ati.init(t_args, fold_index, b1tr_partition_count, b1_all_file_cnt, b1b_all_truth_cnt, b1m_all_truth_cnt) if t_args.ati else None
+        print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     else:
         print("SKIPPED: Performing ATI over B1 data of Training set")
 
@@ -365,6 +358,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
             print("Tier-2 Training over Train B1 [# Partitions: "+str(b1tr_partition_count)+"]")
             for pcount in range(0, b1tr_partition_count):
                 print("Tier-2 Training over Train B1 partition:", pcount)
+                print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
                 b1traindatadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
                 t_args.t2_x_train, t_args.t2_y_train = b1traindatadf.iloc[:, 0], b1traindatadf.iloc[:, 1]
                 t_args.whole_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t1")
@@ -377,6 +371,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
                 del t_args.section_b1_train_partition  # Release Memory
                 gc.collect()
                 cnst.USE_PRETRAINED_FOR_TIER2 = False
+                print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
         else:
             cnst.USE_PRETRAINED_FOR_TIER2 = False  # Use model trained through Echelon
             print("SKIPPED: Tier-2 Training Process")
@@ -388,6 +383,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         print("Tier-2 Validation over Val B1 [# Partitions: "+str(b1val_partition_count)+"]")
         for pcount in range(0, b1val_partition_count):
             print("Tier-2 Validation over Val B1 partition:", pcount)
+            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
             b1valdatadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_val_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
             predict_t2_val_data_partition = pObj(cnst.TIER2, t2_fpr, b1valdatadf.iloc[:, 0], b1valdatadf.iloc[:, 1])
             predict_t2_val_data_partition.wpartition = get_partition_data("b1_val", fold_index, pcount, "t1")
@@ -408,6 +404,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
             predict_t2_val_data_all.ypred = predict_t2_val_data_partition.ypred if predict_t2_val_data_all.ypred is None else np.concatenate([predict_t2_val_data_all.ypred, predict_t2_val_data_partition.ypred])
 
             print("All Tier-2 Test data Size updated:", predict_t2_val_data_all.ytrue.shape)
+            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
 
         predict_t2_val_data_all = predict.select_thd_get_metrics_bfn_mfp(cnst.TIER2, predict_t2_val_data_all)
 
@@ -448,6 +445,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
     # return None, None, thd2, q_sections_selected, t_args.train_section_map
     pd.DataFrame([{"thd1": max_val_thd1, "thd2": thd2, "boosting_bound": min_val_boosting_bound}]).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"), index=False)
     pd.DataFrame(q_sections_selected).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "qualified_sections_" + str(fold_index) + ".csv"), header=None, index=False)
+    print("GPU Consumption at the end of training:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     return  # predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
 
 

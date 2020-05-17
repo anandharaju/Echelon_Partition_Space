@@ -79,14 +79,17 @@ def preprocess_by_section(wpartition, spartition, file_list, max_len, sections, 
                     for key in keys:
                         if fjson["section_info"][key]['section_bounds']["end_offset"] > sections_end:
                             sections_end = fjson["section_info"][key]['section_bounds']["end_offset"]
+
+                    if sections_end < 0:
+                        print("[OVERLAY DATA NOT ADDED] Invalid section end found - ", sections_end)
+
                     if sections_end < fsize - 1:
-                        combined = np.concatenate(
-                            [combined, whole_bytes[sections_end:fsize], np.zeros(cnst.CONV_WINDOW_SIZE)])
+                        combined = np.concatenate([combined, whole_bytes[sections_end:fsize], np.zeros(cnst.CONV_WINDOW_SIZE)])
+
+                    if len(combined) > max_len:
+                        print("[CAUTION: LOSS_OF_DATA] Combined sections exceeded max sample length by " + str(len(combined) - max_len) + " bytes. FileSize:"+str(fsize)+" sections_end:"+str(sections_end))
 
                 corpus.append(combined)
-                if len(combined) > max_len:
-                    print("[CAUTION: LOSS_OF_DATA] Combined Sections : exceeded max sample length by " + str(
-                        len(combined) - max_len) + " bytes")
 
             except Exception as e:
                 print("Module: process_by_section. Error:", str(e))

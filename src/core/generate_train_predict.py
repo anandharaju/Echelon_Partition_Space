@@ -114,6 +114,8 @@ def train_predict(model_idx, dataset_path=None):
         else:
             print("SKIPPED: Tier 1&2 Training Process")
 
+        if cnst.ONLY_TIER1_TRAINING:
+            continue
         print("**********************  PREDICTION TIER 1&2 - STARTED  ************************")
         cpt = time.time()
         cv_obj = cv_info()

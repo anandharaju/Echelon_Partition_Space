@@ -14,7 +14,7 @@ TIER1_PRETRAINED_MODEL = "ember_malconv.h5"
 TIER2_PRETRAINED_MODEL = "ember_malconv.h5"
 BENIGN = 0
 MALWARE = 1
-T1_TRAIN_BATCH_SIZE = 64
+T1_TRAIN_BATCH_SIZE = 128
 T2_TRAIN_BATCH_SIZE = 32
 PREDICT_BATCH_SIZE = 128
 
@@ -25,6 +25,8 @@ ATI_PREDICT_VERBOSE = VERBOSE_1
 
 #####################################################################################
 USE_GPU = True
+NUM_GPU = 1
+
 REGENERATE_DATA_AND_PARTITIONS = False
 DO_SUBSAMPLING = False
 
@@ -38,12 +40,13 @@ TST_SET_SIZE = 0.2
 EPOCHS = 1
 # TIER-1
 TIER1 = "TIER1"
-TIER1_EPOCHS = EPOCHS
+TIER1_EPOCHS = 10
 TIER1_TARGET_FPR = 0.1
 
-SKIP_ENTIRE_TRAINING = True
-SKIP_TIER1_TRAINING = True
+SKIP_ENTIRE_TRAINING = False
+ONLY_TIER1_TRAINING = True
 
+SKIP_TIER1_TRAINING = False
 SKIP_TIER1_VALIDATION = False           # Generates Val B1
 SKIP_TIER1_TRAINING_PRED = False        # Generates Train B1
 SKIP_ATI_PROCESSING = False
@@ -53,7 +56,7 @@ SKIP_TIER2_TRAINING = False
 
 # TIER-2
 TIER2 = "TIER2"
-TIER2_EPOCHS = EPOCHS
+TIER2_EPOCHS = 10
 TIER2_TARGET_FPR = 0
 
 OVERALL_TARGET_FPR = 0.1
@@ -66,7 +69,7 @@ INITIAL_FOLD = 0
 RANDOMIZE = False  # Set Random seed for True
 
 #  DATA SOURCE
-MAX_PARTITION_SIZE = 50 * 2 ** 20
+MAX_PARTITION_SIZE = 1 * 2 ** 30
 MAX_SECT_BYTE_MAP_SIZE = 2000
 MAX_FILE_SIZE_LIMIT = 2**20  # 204800
 MAX_FILE_COUNT_LIMIT = None
@@ -104,7 +107,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [92]
+PERCENTILES = [88, 89, 90, 91, 92, 93, 94, 95]
 RUN_FOLDS = [0]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
