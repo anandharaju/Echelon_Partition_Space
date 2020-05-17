@@ -25,7 +25,7 @@ ATI_PREDICT_VERBOSE = VERBOSE_0
 
 #####################################################################################
 USE_GPU = True
-NUM_GPU = 1
+NUM_GPU = 4
 
 REGENERATE_DATA_AND_PARTITIONS = False
 DO_SUBSAMPLING = False
@@ -37,7 +37,7 @@ PERFORM_B2_BOOSTING = True
 VAL_SET_SIZE = 0.2
 TST_SET_SIZE = 0.2
 
-EPOCHS = 5
+EPOCHS = 2
 # TIER-1
 TIER1 = "TIER1"
 TIER1_EPOCHS = 1
@@ -108,7 +108,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
 PERCENTILES = [88, 89, 90, 91, 92, 93, 94, 95]
-RUN_FOLDS = [0]
+RUN_FOLDS = [4]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'
