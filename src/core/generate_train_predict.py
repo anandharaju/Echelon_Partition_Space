@@ -101,7 +101,7 @@ def train_predict(model_idx, dataset_path=None):
         trn_val_partitions = [x for x in range(m_pcount) if x not in tst_partitions]
         val_partitions = trn_val_partitions[-1*val_pcount:]
         trn_partitions = [x for x in trn_val_partitions if x not in val_partitions]
-        pd.DataFrame([{"train": len(trn_partitions), "val": val_partitions, "test": tst_partitions}]).to_csv(os.path.join(cnst.DATA_SOURCE_PATH, "partition_tracker_" + str(fold_index) + ".csv"), index=False)
+        pd.DataFrame([{"train": trn_partitions, "val": val_partitions, "test": tst_partitions}]).to_csv(os.path.join(cnst.DATA_SOURCE_PATH, "partition_tracker_" + str(fold_index) + ".csv"), index=False)
 
         print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> [ CV-FOLD " + str(fold_index + 1) + "/" + str(cnst.CV_FOLDS) + " ]", "Training: " + str(len(trn_partitions)), "Validation: " + str(len(val_partitions)), "Testing: " + str(len(tst_partitions)))
         if fold_index not in cnst.RUN_FOLDS:
