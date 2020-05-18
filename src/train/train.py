@@ -305,6 +305,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         print("\n*** Prediction over Training data in TIER-1 to generate B1 data for TIER-2 Training")
         pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None, index=None)
         for tp_idx in train_partitions:
+            tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p" + str(tp_idx) + ".csv", header=None)
             predict_t1_train_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, tr_datadf.iloc[:, 0].values, tr_datadf.iloc[:, 1].values)
             predict_t1_train_data.thd = max_val_thd1
             predict_t1_train_data.boosting_upper_bound = min_val_boosting_bound
