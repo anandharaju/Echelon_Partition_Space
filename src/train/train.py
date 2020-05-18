@@ -141,6 +141,9 @@ def get_model1(args):
         if cnst.USE_PRETRAINED_FOR_TIER1:
             print("[ CAUTION ] : Resuming with pretrained model for TIER1 - "+args.pretrained_t1_model_name)
             model1 = load_model(args.model_path + args.pretrained_t1_model_name)
+
+            optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+            model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         else:
             print("[ CAUTION ] : Resuming with old model")
             model1 = load_model(args.model_path + args.t1_model_name)
@@ -155,17 +158,18 @@ def get_model1(args):
         elif args.fusion:
             model1 = malfusion.model(args.max_len, args.win_size)
 
-    # ##################################################################################################################
-    #                                                  Optimization
-    # ##################################################################################################################
-    # optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-    optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
-    model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-    # ##################################################################################################################
-    #                                             Hyper-parameter Tuning
-    # ##################################################################################################################
-    # param_dict = {'lr': [0.00001, 0.0001, 0.001, 0.1]}
-    # model_gs = GridSearchCV(model, param_dict, cv=10)
+        # ##################################################################################################################
+        #                                                  Optimization
+        # ##################################################################################################################
+        # optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+        optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+        model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        # ##################################################################################################################
+        #                                             Hyper-parameter Tuning
+        # ##################################################################################################################
+        # param_dict = {'lr': [0.00001, 0.0001, 0.001, 0.1]}
+        # model_gs = GridSearchCV(model, param_dict, cv=10)
+
     res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
     print("GPU Consumption after loading Model1:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     # model1.summary()
@@ -179,6 +183,9 @@ def get_model2(args):
         if cnst.USE_PRETRAINED_FOR_TIER2:
             print("[ CAUTION ] : Resuming with pretrained model for TIER2 - "+args.pretrained_t2_model_name)
             model2 = load_model(args.model_path + args.pretrained_t2_model_name)
+
+            optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+            model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         else:
             print("[ CAUTION ] : Resuming with old model")
             model2 = load_model(args.model_path + args.t2_model_name)
@@ -193,9 +200,10 @@ def get_model2(args):
         elif args.fusion:
             model2 = malfusion.model(args.max_len, args.win_size)
 
-    # optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-    optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
-    model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        # optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+        optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+        model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+
     res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
     print("GPU Consumption after loading Model2:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     # model2.summary()

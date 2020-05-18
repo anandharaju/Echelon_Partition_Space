@@ -23,6 +23,8 @@ def predict_byte(model, partition, xfiles, args):
         steps=pred_steps,
         verbose=args.verbose
         )
+    del model
+    gc.collect()
     return pred
 
 
@@ -34,6 +36,8 @@ def predict_byte_by_section(model, wpartition, spartition, xfiles, q_sections, s
         steps=pred_steps,
         verbose=args.verbose
         )
+    del model
+    gc.collect()
     return pred
 
 
