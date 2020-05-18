@@ -31,7 +31,7 @@ REGENERATE_DATA_AND_PARTITIONS = False
 DO_SUBSAMPLING = False
 
 PROJECT_ROOT = os.getcwdb().decode("utf-8").split("/")[-2] if LINUX_ENV else os.getcwdb().decode("utf-8").split("\\")[-2]
-USE_PRETRAINED_FOR_TIER1 = False  # True:Malconv False:Echelon
+USE_PRETRAINED_FOR_TIER1 = True  # True:Malconv False:Echelon
 USE_PRETRAINED_FOR_TIER2 = True
 PERFORM_B2_BOOSTING = True
 VAL_SET_SIZE = 0.2
@@ -107,8 +107,8 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # FEATURE MAP VISUALIZATION
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
-PERCENTILES = [88, 89, 90, 91, 92, 93, 94]
-RUN_FOLDS = [4]
+PERCENTILES = [88, 90, 92, 94]
+RUN_FOLDS = [0]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'

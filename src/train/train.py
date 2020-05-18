@@ -29,12 +29,6 @@ from plots.plots import display_probability_chart
 from analyzers.collect_exe_files import get_partition_data, partition_pkl_files
 import gc
 from keras import backend as K
-import nvidia_smi
-
-nvidia_smi.nvmlInit()
-handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-print("Initial GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
 
 
 # ####################################
@@ -170,8 +164,6 @@ def get_model1(args):
         # param_dict = {'lr': [0.00001, 0.0001, 0.001, 0.1]}
         # model_gs = GridSearchCV(model, param_dict, cv=10)
 
-    res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-    print("GPU Consumption after loading Model1:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     # model1.summary()
     return model1
 
@@ -204,8 +196,6 @@ def get_model2(args):
         optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
         model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
-    res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-    print("GPU Consumption after loading Model2:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     # model2.summary()
     return model2
 
@@ -255,18 +245,12 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
                 t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = tr_datadf.iloc[:, 0].values, None, tr_datadf.iloc[:, 1].values, None
                 t_args.t1_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t1_y_train), t_args.t1_y_train)  # Class Imbalance Tackling - Setting class weights
 
-                res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-                print("GPU Consumption before loading partition:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
                 t_args.train_partition = get_partition_data(None, None, tp_idx, "t1")
-                res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-                print("GPU Consumption after loading partition:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
                 train_tier1(t_args)
                 del t_args.train_partition
                 gc.collect()
 
                 cnst.USE_PRETRAINED_FOR_TIER1 = False
-                res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-                print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
         del t_args.t1_model_base
         gc.collect()
     else:
@@ -285,8 +269,6 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         print("*** Prediction over Validation data in TIER-1 to select THD1 and Boosting Bound")
         pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_" + str(fold_index) + "_pkl.csv", header=None, index=None)
         for vp_idx in val_partitions:
-            res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
             val_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p"+str(vp_idx)+".csv", header=None)
             predict_t1_val_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, val_datadf.iloc[:, 0].values, val_datadf.iloc[:, 1].values)
             predict_t1_val_data.partition = get_partition_data(None, None, vp_idx, "t1")
@@ -301,8 +283,6 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
 
             val_b1datadf = pd.concat([pd.DataFrame(predict_t1_val_data.xB1), pd.DataFrame(predict_t1_val_data.yB1)], axis=1)
             val_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
-            res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
 
         val_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None)
         b1val_partition_count = partition_pkl_files("b1_val", fold_index, val_b1datadf.iloc[:, 0], val_b1datadf.iloc[:, 1])
@@ -319,10 +299,6 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         print("\n*** Prediction over Training data in TIER-1 to generate B1 data for TIER-2 Training")
         pd.DataFrame().to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None, index=None)
         for tp_idx in train_partitions:
-            res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
-            tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p" + str(tp_idx) + ".csv", header=None)
-
             predict_t1_train_data = pObj(cnst.TIER1, cnst.TIER1_TARGET_FPR, tr_datadf.iloc[:, 0].values, tr_datadf.iloc[:, 1].values)
             predict_t1_train_data.thd = max_val_thd1
             predict_t1_train_data.boosting_upper_bound = min_val_boosting_bound
@@ -335,8 +311,6 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
 
             train_b1data_partition_df = pd.concat([pd.DataFrame(predict_t1_train_data.xB1), pd.DataFrame(predict_t1_train_data.yB1)], axis=1)
             train_b1data_partition_df.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None, index=None, mode='a')
-            res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
 
         train_b1data_all_df = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None)
         b1_partition_tracker = pd.read_csv(os.path.join(cnst.DATA_SOURCE_PATH, "b1_partition_tracker_" + str(fold_index) + ".csv"))
@@ -359,11 +333,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
     if not cnst.SKIP_ATI_PROCESSING:
         print("\nATI - PROCESSING BENIGN AND MALWARE FILES\t\t", "B1 FILES COUNT:", np.shape(train_b1data_all_df.iloc[:, 1])[0], "[# Partitions: "+str(b1tr_partition_count)+"]")
         print("-----------------------------------------")
-        res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-        print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
         ati.init(t_args, fold_index, b1tr_partition_count, b1_all_file_cnt, b1b_all_truth_cnt, b1m_all_truth_cnt) if t_args.ati else None
-        res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-        print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     else:
         print("SKIPPED: Performing ATI over B1 data of Training set")
 
@@ -412,8 +382,6 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
             for epoch in range(cnst.EPOCHS):
                 for pcount in range(0, b1tr_partition_count):
                     print("Tier-2 Training over Train B1 partition:", pcount)
-                    res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-                    print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
                     b1traindatadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
                     t_args.t2_x_train, t_args.t2_y_train = b1traindatadf.iloc[:, 0], b1traindatadf.iloc[:, 1]
                     t_args.whole_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t1")
@@ -426,8 +394,6 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
                     del t_args.section_b1_train_partition  # Release Memory
                     gc.collect()
                     cnst.USE_PRETRAINED_FOR_TIER2 = False
-                    res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-                    print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
         else:
             cnst.USE_PRETRAINED_FOR_TIER2 = False  # Use model trained through Echelon
             print("SKIPPED: Tier-2 Training Process")
@@ -442,8 +408,6 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         print("Tier-2 Validation over Val B1 [# Partitions: "+str(b1val_partition_count)+"]")
         for pcount in range(0, b1val_partition_count):
             print("Tier-2 Validation over Val B1 partition:", pcount)
-            res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
             b1valdatadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_val_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
             predict_t2_val_data_partition = pObj(cnst.TIER2, t2_fpr, b1valdatadf.iloc[:, 0], b1valdatadf.iloc[:, 1])
             predict_t2_val_data_partition.wpartition = get_partition_data("b1_val", fold_index, pcount, "t1")
@@ -464,8 +428,6 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
             predict_t2_val_data_all.ypred = predict_t2_val_data_partition.ypred if predict_t2_val_data_all.ypred is None else np.concatenate([predict_t2_val_data_all.ypred, predict_t2_val_data_partition.ypred])
 
             print("All Tier-2 Test data Size updated:", predict_t2_val_data_all.ytrue.shape)
-            res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-            print("GPU Consumption:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
 
         predict_t2_val_data_all = predict.select_thd_get_metrics_bfn_mfp(cnst.TIER2, predict_t2_val_data_all)
 
@@ -506,8 +468,6 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
     # return None, None, thd2, q_sections_selected, t_args.train_section_map
     pd.DataFrame([{"thd1": max_val_thd1, "thd2": thd2, "boosting_bound": min_val_boosting_bound}]).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"), index=False)
     pd.DataFrame(q_sections_selected).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "qualified_sections_" + str(fold_index) + ".csv"), header=None, index=False)
-    res = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-    print("GPU Consumption at the end of training:", f'gpu: {res.gpu}%, gpu-mem: {res.memory}%')
     return  # predict_t1_train_data.thd, predict_t1_train_data.boosting_upper_bound, thd2, q_sections_selected, t_args.train_section_map
 
 
