@@ -135,15 +135,17 @@ def get_model1(args):
         if cnst.USE_PRETRAINED_FOR_TIER1:
             print("[ CAUTION ] : Resuming with pretrained model for TIER1 - "+args.pretrained_t1_model_name)
             model1 = load_model(args.model_path + args.pretrained_t1_model_name)
-
+            if cnst.NUM_GPU > 1:
+                model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
             optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
             model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         else:
             print("[ CAUTION ] : Resuming with old model")
             model1 = load_model(args.model_path + args.t1_model_name)
-        if cnst.NUM_GPU > 1:
-            model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
-        # model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
+            #if cnst.NUM_GPU > 1:
+            #    model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
+            optimizer = optimizers.Adam(lr=0.001)
+            model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
     else:
         if args.byte:
             model1 = echelon.model(args.t1_max_len, args.t1_win_size)
@@ -175,14 +177,18 @@ def get_model2(args):
         if cnst.USE_PRETRAINED_FOR_TIER2:
             print("[ CAUTION ] : Resuming with pretrained model for TIER2 - "+args.pretrained_t2_model_name)
             model2 = load_model(args.model_path + args.pretrained_t2_model_name)
-
+            if cnst.NUM_GPU > 1:
+                model2 = multi_gpu_model(model2, gpus=cnst.NUM_GPU)
             optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
             model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         else:
             print("[ CAUTION ] : Resuming with old model")
             model2 = load_model(args.model_path + args.t2_model_name)
-        if cnst.NUM_GPU > 1:
-            model2 = multi_gpu_model(model2, gpus=cnst.NUM_GPU)
+            # if cnst.NUM_GPU > 1:
+            #    model2 = multi_gpu_model(model2, gpus=cnst.NUM_GPU)
+            optimizer = optimizers.Adam(lr=0.001)
+            model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
+
     else:
         # print("*************************** CREATING new model *****************************")
         if args.byte:
