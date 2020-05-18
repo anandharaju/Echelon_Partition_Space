@@ -15,6 +15,37 @@ import gc
 import os
 
 
+def get_model_memory_usage(batch_size, model):
+    import numpy as np
+    from keras import backend as K
+
+    shapes_mem_count = 0
+    internal_model_mem_count = 0
+    for l in model.layers:
+        layer_type = l.__class__.__name__
+        if layer_type == 'Model':
+            internal_model_mem_count += get_model_memory_usage(batch_size, l)
+        single_layer_mem = 1
+        for s in l.output_shape:
+            if s is None:
+                continue
+            single_layer_mem *= s
+        shapes_mem_count += single_layer_mem
+
+    trainable_count = np.sum([K.count_params(p) for p in set(model.trainable_weights)])
+    non_trainable_count = np.sum([K.count_params(p) for p in set(model.non_trainable_weights)])
+
+    number_size = 4.0
+    if K.floatx() == 'float16':
+         number_size = 2.0
+    if K.floatx() == 'float64':
+         number_size = 8.0
+
+    total_memory = number_size*(batch_size*shapes_mem_count + trainable_count + non_trainable_count)
+    gbytes = np.round(total_memory / (1024.0 ** 3), 3) + internal_model_mem_count
+    return gbytes
+
+
 def predict_byte(model, partition, xfiles, args):
     xlen = len(xfiles)
     pred_steps = xlen//args.batch_size if xlen % args.batch_size == 0 else xlen//args.batch_size + 1
@@ -161,6 +192,7 @@ def predict_tier1(model_idx, pobj, fold_index):
     predict_args = DefaultPredictArguments()
     tier1_model = load_model(predict_args.model_path + cnst.TIER1_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
     # model.summary()
+    print("Memory Required:", get_model_memory_usage(predict_args.batch_size, tier1_model))
 
     if cnst.EXECUTION_TYPE[model_idx] == cnst.BYTE:
         pobj.yprob = predict_byte(tier1_model, pobj.partition, pobj.xtrue, predict_args)
@@ -195,6 +227,8 @@ def select_thd_get_metrics(pobj):
 def predict_tier2(model_idx, pobj, fold_index):
     predict_args = DefaultPredictArguments()
     tier2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
+
+    print("Memory Required:", get_model_memory_usage(predict_args.batch_size, tier2_model))
 
     if cnst.EXECUTION_TYPE[model_idx] == cnst.BYTE:
         # pbs.trigger_predict_by_section()
