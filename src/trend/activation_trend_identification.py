@@ -221,6 +221,7 @@ def process_files(args, sd):
 
     for i in range(0, len(files)):
         section_bounds, unprocessed, fsize = parse_pe_pkl(i, files[i][:-4], args.section_b1_train_partition[files[i][:-4]], unprocessed)
+        print(i)
         if cnst.USE_POOLING_LAYER:
             try:
                 pooled_max_1D_map = np.sum(raw_feature_maps[i] == np.amax(raw_feature_maps[i], axis=0), axis=1)[:np.min([cnst.MAX_FILE_CONVOLUTED_SIZE,int(fsize/cnst.CONV_STRIDE_SIZE)+2])]
