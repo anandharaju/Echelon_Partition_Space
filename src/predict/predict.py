@@ -54,8 +54,6 @@ def predict_byte(model, partition, xfiles, args):
         steps=pred_steps,
         verbose=args.verbose
         )
-    del model
-    gc.collect()
     return pred
 
 
@@ -67,8 +65,6 @@ def predict_byte_by_section(model, wpartition, spartition, xfiles, q_sections, s
         steps=pred_steps,
         verbose=args.verbose
         )
-    del model
-    gc.collect()
     return pred
 
 
@@ -200,6 +196,9 @@ def predict_tier1(model_idx, pobj, fold_index):
         pobj.yprob = predict_by_features(tier1_model, pobj.xtrue, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FUSION:
         pobj.yprob = predict_by_fusion(tier1_model, pobj.xtrue, predict_args)
+
+    del tier1_model
+    gc.collect()
     return pobj
 
 
@@ -237,6 +236,9 @@ def predict_tier2(model_idx, pobj, fold_index):
         pobj.yprob = predict_by_features(tier2_model, pobj.xtrue, predict_args)
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FUSION:
         pobj.yprob = predict_by_fusion(tier2_model, pobj.xtrue, predict_args)
+
+    del tier2_model
+    gc.collect()
     return pobj
 
 

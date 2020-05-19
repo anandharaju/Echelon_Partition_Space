@@ -14,6 +14,7 @@ from plots.ati_plots import feature_map_histogram
 from .ati_args import SectionActivationDistribution
 import pandas as pd
 from analyzers.collect_exe_files import get_partition_data
+import gc
 
 
 def find_qualified_sections(sd, trend, common_trend, support):
@@ -64,14 +65,6 @@ def parse_pe_pkl(file_index, file_id, fjson, unprocessed):
         print("parse failed . . . [FILE INDEX - ", file_index, "]  [", file_id, "] ", e)
         unprocessed += 1
     return section_bounds, unprocessed, file_byte_size
-
-
-def get_feature_map(smodel, partition, file):
-    predict_args = DefaultPredictArguments()
-    predict_args.verbose = cnst.ATI_PREDICT_VERBOSE
-    prediction = predict_byte(smodel, partition, np.array([file]), predict_args)
-    raw_feature_map = prediction[0]
-    return raw_feature_map
 
 
 def map_act_to_sec(ftype, fmap, sbounds, sd):
@@ -163,37 +156,51 @@ def map_act_to_sec(ftype, fmap, sbounds, sd):
     return sd
 
 
+def get_feature_map(smodel, partition, file):
+    predict_args = DefaultPredictArguments()
+    predict_args.verbose = cnst.ATI_PREDICT_VERBOSE
+    prediction = predict_byte(smodel, partition, np.array([file]), predict_args)
+    raw_feature_map = prediction[0]
+    return raw_feature_map
+
+
+def get_feature_maps(smodel, partition, files):
+    predict_args = DefaultPredictArguments()
+    predict_args.verbose = cnst.ATI_PREDICT_VERBOSE
+    raw_feature_maps = predict_byte(smodel, partition, files, predict_args)
+    return raw_feature_maps
+
+
 def process_files(args, sd):
     unprocessed = 0
     samplewise_feature_maps = []
     stunted_model = get_stunted_model(args)
 
-    print("FMAP MODULE Total B1 [{0}]\tGroundTruth [{1}:{2}]".format(len(args.t2_y_train),
-                                                                     len(np.where(args.t2_y_train == cnst.BENIGN)[0]),
-                                                                     len(np.where(args.t2_y_train == cnst.MALWARE)[0])))
+    files = args.t2_x_train
+    files_type = args.t2_y_train
 
-    pObj_fmap = pObj(cnst.TIER1, None, args.t2_x_train, args.t2_y_train)
-    for i in range(0, len(pObj_fmap.xtrue)):
-        file = pObj_fmap.xtrue[i]
-        file_type = pObj_fmap.ytrue[i]  # Using Ground Truth to get trend of actual benign and malware files
-        section_bounds, unprocessed, fsize = parse_pe_pkl(i, file[:-4], args.section_b1_train_partition[file[:-4]], unprocessed)
+    print("FMAP MODULE Total B1 [{0}]\tGroundTruth [{1}:{2}]".format(len(args.t2_y_train), len(np.where(args.t2_y_train == cnst.BENIGN)[0]), len(np.where(args.t2_y_train == cnst.MALWARE)[0])))
 
-        file_whole_bytes = {file[:-4]: args.whole_b1_train_partition[file[:-4]]}
-        raw_feature_map = get_feature_map(stunted_model, file_whole_bytes, file)
+    # file_type = pObj_fmap.ytrue[i]  # Using Ground Truth to get trend of actual benign and malware files
+    # file_whole_bytes = {file[:-4]: args.whole_b1_train_partition[file[:-4]]}
+    raw_feature_maps = get_feature_maps(stunted_model, args.whole_b1_train_partition, files)
 
+    for i in range(0, len(files)):
+        section_bounds, unprocessed, fsize = parse_pe_pkl(i, files[i][:-4], args.section_b1_train_partition[files[i][:-4]], unprocessed)
         if cnst.USE_POOLING_LAYER:
             try:
-                pooled_max_2D_map = np.amax(raw_feature_map, axis=0)
-                pooled_max_1D_map = np.sum(raw_feature_map == np.amax(raw_feature_map, axis=0), axis=1)[:np.min([cnst.MAX_FILE_CONVOLUTED_SIZE,int(fsize/cnst.CONV_STRIDE_SIZE)+2])]
-                sd = map_act_to_sec(file_type, pooled_max_1D_map, section_bounds, sd)
+                pooled_max_1D_map = np.sum(raw_feature_maps[i] == np.amax(raw_feature_maps[i], axis=0), axis=1)[:np.min([cnst.MAX_FILE_CONVOLUTED_SIZE,int(fsize/cnst.CONV_STRIDE_SIZE)+2])]
+                sd = map_act_to_sec(files_type[i], pooled_max_1D_map, section_bounds, sd)
             except Exception as e:
-                print("$$$$$$$$", str(e))  # raw_feature_map.ravel().size)
+                print("$$$$$$$$", str(e), np.shape(raw_feature_maps[i]))  # .size, files[i], args.whole_b1_train_partition[files[i][:-4]])
         else:
-            feature_map = raw_feature_map.sum(axis=1).ravel()
+            feature_map = raw_feature_maps[i].sum(axis=1).ravel()
             # feature_map_histogram(feature_map, prediction)
             samplewise_feature_maps.append(feature_map)
-            sd = map_act_to_sec(file_type, feature_map, section_bounds, sd)
+            sd = map_act_to_sec(files_type[i], feature_map, section_bounds, sd)
 
+    del stunted_model
+    gc.collect()
     return sd
 
     # print(section_stat)
@@ -248,10 +255,12 @@ def get_stunted_model(args):
     # model.summary()
     # redefine model to output right after the sixth hidden layer
     # (ReLU activation layer after convolution - before max pooling)
-    stunted_outputs = [complete_model.layers[x].output for x in [cnst.LAYER_NUM_TO_STUNT]]
+
+    #stunted_outputs = [complete_model.layers[x].output for x in [cnst.LAYER_NUM_TO_STUNT]]
+    stunted_outputs = complete_model.get_layer('multiply_1').output
     stunted_model = Model(inputs=complete_model.inputs, outputs=stunted_outputs)
     # stunted_model.summary()
-    print("Model stunted upto ", stunted_outputs[0])
+    print("Model stunted upto ", stunted_outputs[0], "Layer number passed to stunt:", cnst.LAYER_NUM_TO_STUNT)
     return stunted_model
 
 

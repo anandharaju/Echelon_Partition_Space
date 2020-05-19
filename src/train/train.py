@@ -442,7 +442,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         #print("FPR: {:6.2f}".format(predict_t2_val_data_all.fpr), "TPR: {:6.2f}".format(predict_t2_val_data_all.tpr), "\tTHD2: {:6.2f}".format(predict_t2_val_data_all.thd))
 
         curdiff = predict_t2_val_data_all.tpr - predict_t2_val_data_all.fpr
-        if curdiff != 0 and curdiff > maxdiff:
+        if True:  # curdiff != 0 and curdiff > maxdiff:
             maxdiff = curdiff
             q_criterion_selected = q_criterion
             best_t2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
