@@ -21,12 +21,12 @@ if not cnst.USE_GPU:
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 else:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
     if cnst.GPU_MEM_LIMIT > 0:
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
         config.gpu_options.per_process_gpu_memory_fraction = cnst.GPU_MEM_LIMIT
-        set_session(tf.Session(config=config))
         print(">>> Retricting GPU Memory Usage:", cnst.GPU_MEM_LIMIT)
+    set_session(tf.Session(config=config))
 
 
 def clean_files():
