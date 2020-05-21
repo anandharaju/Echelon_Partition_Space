@@ -1,17 +1,10 @@
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session, get_session
+from keras.backend.tensorflow_backend import get_session
 from utils.preprocess import preprocess, preprocess_by_section
 
 
-def limit_gpu_memory(per):
-    config = tf.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = per
-    set_session(tf.Session(config=config))
-
-
-def initiate_tensorboard_logging(log_path):
+def initiate_tensorboard_logging(tf, log_path):
     writer = tf.summary.FileWriter(log_path)
     writer.add_graph(get_session().graph)
 
@@ -60,35 +53,6 @@ def data_generator_by_section(wpartition, spartition, sections, section_map, dat
                     print("TIER-2 Error during PRE-PROCESSING SECTIONS. . .   [", labels[i], data[i], "]", str(e))
     else:
         print("TIER2 : No partitions supplied. Check if partition loaded correctly with correct path")
-
-
-def data_generator_by_features(data, labels, batch_size, shuffle, drop_features=None):
-    idx = np.arange(len(data))
-    if shuffle:
-        np.random.shuffle(idx)
-    batches = [idx[range(batch_size*i, min(len(data), batch_size*(i+1)))] for i in range(len(data)//batch_size)]
-    while True:
-        for i in batches:
-            # print("Batch i:", i)
-            xx = preprocess_by_features(data[i], drop_features)
-            yy = labels[i]
-            if xx is None:
-                print("here I am")
-            yield (xx, yy)
-
-
-def data_generator_by_fusion(data, labels, max_len, batch_size, shuffle):
-    idx = np.arange(len(data))
-    if shuffle:
-        np.random.shuffle(idx)
-    batches = [idx[range(batch_size*i, min(len(data), batch_size*(i+1)))] for i in range(len(data))]
-    while True:
-        for i in batches:
-            xx = list()
-            xx.append(preprocess(data[i], max_len)[0])
-            xx.append(preprocess_by_features(data[i]))
-            yy = labels[i]
-            yield (xx, yy)
 
 
 class logger():

@@ -28,16 +28,6 @@ import random
 from plots.plots import display_probability_chart
 from analyzers.collect_exe_files import get_partition_data, partition_pkl_files
 import gc
-from keras import backend as K
-
-
-# ####################################
-# Set USE_GPU=FALSE to RUN IN CPU ONLY
-# ####################################
-# '''print('GPU found') if tf.test.gpu_device_name() else print("No GPU found")'''
-if not cnst.USE_GPU:
-    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 
 def get_model_memory_usage(batch_size, model):
@@ -232,8 +222,6 @@ def train_tier2(args):
 def init(model_idx, train_partitions, val_partitions, fold_index):
     t_args = DefaultTrainArguments()
 
-    # limit gpu memory
-    if t_args.limit > 0: utils.limit_gpu_memory(t_args.limit)
     if cnst.EXECUTION_TYPE[model_idx] == cnst.BYTE:                 t_args.byte = True
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FEATURISTIC:        t_args.featuristic = True
     elif cnst.EXECUTION_TYPE[model_idx] == cnst.FUSION:             t_args.fusion = True
@@ -442,7 +430,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         #print("FPR: {:6.2f}".format(predict_t2_val_data_all.fpr), "TPR: {:6.2f}".format(predict_t2_val_data_all.tpr), "\tTHD2: {:6.2f}".format(predict_t2_val_data_all.thd))
 
         curdiff = predict_t2_val_data_all.tpr - predict_t2_val_data_all.fpr
-        if True:  # curdiff != 0 and curdiff > maxdiff:
+        if curdiff != 0 and curdiff > maxdiff:
             maxdiff = curdiff
             q_criterion_selected = q_criterion
             best_t2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")

@@ -53,7 +53,6 @@ class DefaultPredictArguments:
     tier1_epochs = 1
     tier2_epochs = 1
     total_features = 53
-    limit = 0  # help="limit gpu memory percentage"
     max_len = cnst.MAX_FILE_SIZE_LIMIT  # help="model input length"
     win_size = 500
     save_path = cnst.SAVE_PATH

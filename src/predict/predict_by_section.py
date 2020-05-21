@@ -42,10 +42,6 @@ def trigger_predict_by_section():
     metaObj.project_details()
     args = parser.parse_args()
 
-    # limit gpu memory
-    if args.limit > 0:
-        utils.limit_gpu_memory(args.limit)
-
     st = time.time()
     all_sections_pred = []
     # read data

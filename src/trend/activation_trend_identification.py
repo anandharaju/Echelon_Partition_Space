@@ -221,7 +221,6 @@ def process_files(args, sd):
 
     for i in range(0, len(files)):
         section_bounds, unprocessed, fsize = parse_pe_pkl(i, files[i][:-4], args.section_b1_train_partition[files[i][:-4]], unprocessed)
-        print(i)
         if cnst.USE_POOLING_LAYER:
             try:
                 pooled_max_1D_map = np.sum(raw_feature_maps[i] == np.amax(raw_feature_maps[i], axis=0), axis=1)[:np.min([cnst.MAX_FILE_CONVOLUTED_SIZE,int(fsize/cnst.CONV_STRIDE_SIZE)+2])]
@@ -283,9 +282,6 @@ def process_files(args, sd):
 
 
 def get_stunted_model(args):
-    # limit gpu memory
-    if args.limit > 0:
-        utils.limit_gpu_memory(args.limit)
     complete_model = load_model(join(args.save_path, args.t1_model_name))
     # model.summary()
     # redefine model to output right after the sixth hidden layer

@@ -10,6 +10,23 @@ from keras.backend.tensorflow_backend import get_session
 from keras import backend as K
 import gc
 from numba import cuda
+import tensorflow as tf
+
+
+# ####################################
+# Set USE_GPU=FALSE to RUN IN CPU ONLY
+# ####################################
+# print('GPU found') if tf.test.gpu_device_name() else print("No GPU found")
+if not cnst.USE_GPU:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+else:
+    if cnst.GPU_MEM_LIMIT > 0:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        config.gpu_options.per_process_gpu_memory_fraction = cnst.GPU_MEM_LIMIT
+        set_session(tf.Session(config=config))
+        print(">>> Retricting GPU Memory Usage:", cnst.GPU_MEM_LIMIT)
 
 
 def clean_files():

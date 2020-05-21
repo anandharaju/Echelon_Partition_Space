@@ -26,6 +26,7 @@ ATI_PREDICT_VERBOSE = VERBOSE_1
 #####################################################################################
 USE_GPU = True
 NUM_GPU = 1
+GPU_MEM_LIMIT = 0.5
 
 REGENERATE_DATA_AND_PARTITIONS = False
 DO_SUBSAMPLING = False
@@ -46,9 +47,9 @@ TIER1_TARGET_FPR = 0.1
 SKIP_ENTIRE_TRAINING = False
 ONLY_TIER1_TRAINING = False
 
-SKIP_TIER1_TRAINING = True
-SKIP_TIER1_VALIDATION = True           # Generates Val B1
-SKIP_TIER1_TRAINING_PRED = True        # Generates Train B1
+SKIP_TIER1_TRAINING = False
+SKIP_TIER1_VALIDATION = False           # Generates Val B1
+SKIP_TIER1_TRAINING_PRED = False        # Generates Train B1
 SKIP_ATI_PROCESSING = False
 
 SKIP_TIER2_TRAINING = False
@@ -108,7 +109,7 @@ MODEL_PATH = PROJECT_BASE_PATH + ESC + 'model' + ESC  # help="model to resume"
 # #####################################################################################################################
 LAYER_NUM_TO_STUNT = 4 # 6 for echelon
 PERCENTILES = [88, 90, 92, 94]
-RUN_FOLDS = [4]
+RUN_FOLDS = [0]
 
 COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats.csv'
 COMMON_COMBINED_FEATURE_MAP_STATS_FILE = PROJECT_BASE_PATH + ESC + 'out' + ESC + 'result' + ESC + 'combined_stats_common.csv'

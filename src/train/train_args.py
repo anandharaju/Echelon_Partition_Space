@@ -53,7 +53,6 @@ class DefaultTrainArguments:
     pretrained_t1_model_name = cnst.TIER1_PRETRAINED_MODEL
     pretrained_t2_model_name = cnst.TIER2_PRETRAINED_MODEL
 
-    limit = 0  # help="limit gpu memory percentage"
     resume = cnst.RESUME  # Set to True to load already trained model
     save_best = False  # help="Save model with best validation accuracy"
 
