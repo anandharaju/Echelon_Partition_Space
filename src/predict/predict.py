@@ -10,7 +10,7 @@ from config import constants as cnst
 from .predict_args import DefaultPredictArguments, Predict as pObj
 import math
 from plots.plots import display_probability_chart
-from analyzers.collect_exe_files import get_partition_data, partition_pkl_files
+from analyzers.collect_exe_files import get_partition_data, partition_pkl_files_by_count
 import gc
 import os
 
@@ -439,7 +439,7 @@ def init(model_idx, test_partitions, cv_obj, fold_index):
         print(" \n !!!!!      Skipping Tier-2 - B1 set is empty")
         return None
 
-    test_b1_partition_count = partition_pkl_files("b1_test", fold_index, predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1)
+    test_b1_partition_count = partition_pkl_files_by_count("b1_test", fold_index, predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1)
 
     # TIER-2 PREDICTION
     print("Prediction on Testing Data - TIER2 [B1 data]         # Partitions", test_b1_partition_count)  # \t\t\tSection Map Length:", len(section_map))

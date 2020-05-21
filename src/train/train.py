@@ -26,7 +26,7 @@ import pandas as pd
 from analyzers.collect_available_sections import collect_sections
 import random
 from plots.plots import display_probability_chart
-from analyzers.collect_exe_files import get_partition_data, partition_pkl_files
+from analyzers.collect_exe_files import get_partition_data, partition_pkl_files_by_count
 import gc
 
 
@@ -279,7 +279,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
             val_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
 
         val_b1datadf = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None)
-        b1val_partition_count = partition_pkl_files("b1_val", fold_index, val_b1datadf.iloc[:, 0], val_b1datadf.iloc[:, 1])
+        b1val_partition_count = partition_pkl_files_by_count("b1_val", fold_index, val_b1datadf.iloc[:, 0], val_b1datadf.iloc[:, 1])
         pd.DataFrame([{"b1_train": None, "b1_val": b1val_partition_count, "b1_test": None}]).to_csv(os.path.join(cnst.DATA_SOURCE_PATH, "b1_partition_tracker_" + str(fold_index) + ".csv"), index=False)
         pd.DataFrame([{"thd1": max_thd1, "thd2": None, "boosting_bound": min_boosting_bound}]).to_csv(os.path.join(cnst.PROJECT_BASE_PATH + cnst.ESC + "out" + cnst.ESC + "result" + cnst.ESC, "training_outcomes_" + str(fold_index) + ".csv"), index=False)
     else:
@@ -309,7 +309,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
 
         train_b1data_all_df = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_train_" + str(fold_index) + "_pkl.csv", header=None)
         b1_partition_tracker = pd.read_csv(os.path.join(cnst.DATA_SOURCE_PATH, "b1_partition_tracker_" + str(fold_index) + ".csv"))
-        b1_partition_tracker["b1_train"][0] = partition_pkl_files("b1_train", fold_index, train_b1data_all_df.iloc[:, 0], train_b1data_all_df.iloc[:, 1])
+        b1_partition_tracker["b1_train"][0] = partition_pkl_files_by_count("b1_train", fold_index, train_b1data_all_df.iloc[:, 0], train_b1data_all_df.iloc[:, 1])
         b1_partition_tracker.to_csv(os.path.join(cnst.DATA_SOURCE_PATH, "b1_partition_tracker_" + str(fold_index) + ".csv"), index=False)
     else:
         print("SKIPPED: Prediction over Training data in TIER-1 to generate B1 data for TIER-2 Training")
