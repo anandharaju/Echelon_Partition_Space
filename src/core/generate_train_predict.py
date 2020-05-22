@@ -91,9 +91,11 @@ def train_predict(model_idx, dataset_path=None):
     else:
         m_pcount = pd.read_csv(os.path.join(cnst.DATA_SOURCE_PATH, "master_partition_tracker.csv"))["master"][0]
 
-    tst_pcount = int(m_pcount * cnst.TST_SET_SIZE)
-    val_pcount = int((m_pcount - tst_pcount) * cnst.VAL_SET_SIZE)
+    tst_pcount = int(round(m_pcount * cnst.TST_SET_SIZE))
+    val_pcount = int(round((m_pcount - tst_pcount) * cnst.VAL_SET_SIZE))
     trn_pcount = m_pcount - (tst_pcount + val_pcount)
+
+    print("Total Partition:", m_pcount, "\t\t\tTrain:", trn_pcount, "Val:", val_pcount, "Test:", tst_pcount)
 
     for fold_index in range(cnst.CV_FOLDS):
         tst_partitions = np.arange(tst_pcount) + (fold_index * tst_pcount)

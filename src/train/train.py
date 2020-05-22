@@ -17,7 +17,7 @@ from keras import optimizers
 from trend import activation_trend_identification as ati
 import config.constants as cnst
 from .train_args import DefaultTrainArguments
-from plots.plots import plot_history
+from plots.plots import plot_partition_epoch_history
 from predict import predict
 from predict.predict_args import Predict as pObj, DefaultPredictArguments, QStats
 import numpy as np
@@ -62,7 +62,7 @@ def get_model_memory_usage(batch_size, model):
 
 
 def train(args):
-    print("Memory Required:", get_model_memory_usage(args.t1_batch_size, args.t1_model_base))
+    # print("Memory Required:", get_model_memory_usage(args.t1_batch_size, args.t1_model_base))
     train_steps = len(args.t1_x_train) // args.t1_batch_size
     args.t1_train_steps = train_steps - 1 if len(args.t1_x_train) % args.t1_batch_size == 0 else train_steps + 1
 
@@ -197,17 +197,48 @@ def get_model2(args):
 
 
 def train_tier1(args):
-    print("************************ TIER 1 TRAINING - STARTED ****************************       # Samples:", len(args.t1_x_train))
+    # print("************************ TIER 1 TRAINING - STARTED ****************************
+    # Samples:", len(args.t1_x_train))
     if args.tier1:
-        if args.byte:             history = train(args)
-    print("************************ TIER 1 TRAINING - ENDED   ****************************")
+        if args.byte:
+            return train(args)
+    # print("************************ TIER 1 TRAINING - ENDED   ****************************")
 
 
 def train_tier2(args):
     # print("************************ TIER 2 TRAINING - STARTED ****************************")
     if args.tier2:
-        if args.byte:             section_history = train_by_section(args)
+        if args.byte:
+            return train_by_section(args)
     # print("************************ TIER 2 TRAINING - ENDED   ****************************")
+
+
+def evaluate_tier1(args):
+    print("Memory Required:", get_model_memory_usage(args.t1_batch_size, args.t1_model_base))
+    eval_steps = len(args.t1_x_val) // args.t1_batch_size
+    args.t1_val_steps = eval_steps - 1 if len(args.t1_x_val) % args.t1_batch_size == 0 else eval_steps + 1
+
+    history = args.t1_model_base.evaluate_generator(
+        utils.data_generator(args.val_partition, args.t1_x_val, args.t1_y_val, args.t1_max_len, args.t1_batch_size, args.t1_shuffle),
+        steps=args.t1_val_steps,
+        verbose=args.t1_verbose
+    )
+    # plot_history(history, cnst.TIER1)
+    return history
+
+
+def evaluate_tier2(args):
+    print("Memory Required:", get_model_memory_usage(args.t2_batch_size, args.t2_model_base))
+    eval_steps = len(args.t2_x_val) // args.t2_batch_size
+    args.t2_val_steps = eval_steps - 1 if len(args.t2_x_val) % args.t2_batch_size == 0 else eval_steps + 1
+
+    history = args.t2_model_base.evaluate_generator(
+        utils.data_generator_by_section(args.wpartition, args.spartition, args.q_sections, None, args.t2_x_val, args.t2_y_val, args.t2_max_len, args.t2_batch_size, args.t2_shuffle),
+        steps=args.t2_val_steps,
+        verbose=args.t2_verbose
+    )
+    # plot_history(history, cnst.TIER2)
+    return history
 
 
 # ######################################################################################################################
@@ -230,23 +261,69 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
     t_args.t2_model_name = cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5"
 
     # print("######################################   TRAINING TIER-1  ###############################################")
-    partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_" + str(fold_index) + ".csv")
+    # partition_tracker_df = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "partition_tracker_"+str(fold_index)+".csv")
+
     if not cnst.SKIP_TIER1_TRAINING:
+        print("************************ TIER 1 TRAINING - STARTED ****************************")
         t_args.t1_model_base = get_model1(t_args)
+        best_val_loss = float('inf')
+        best_val_acc = 0
+        epochs_since_best = 0
+        mean_trn_loss = []
+        mean_trn_acc = []
+        mean_val_loss = []
+        mean_val_acc = []
         for epoch in range(cnst.EPOCHS):  # External Partition Purpose
+            print("[OUTER PARTITIONS TIER-1 EPOCH]", epoch+1)
+            cur_trn_loss = []
+            cur_trn_acc = []
             for tp_idx in train_partitions:
+                print("Tier-1 Training over partition index:", tp_idx)
                 tr_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p" + str(tp_idx) + ".csv", header=None)
                 t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = tr_datadf.iloc[:, 0].values, None, tr_datadf.iloc[:, 1].values, None
                 t_args.t1_class_weights = class_weight.compute_class_weight('balanced', np.unique(t_args.t1_y_train), t_args.t1_y_train)  # Class Imbalance Tackling - Setting class weights
-
                 t_args.train_partition = get_partition_data(None, None, tp_idx, "t1")
-                train_tier1(t_args)
+                t_history = train_tier1(t_args)
+                cur_trn_loss.append(t_history.history['accuracy'][0])
+                cur_trn_acc.append(t_history.history['loss'][0])
                 del t_args.train_partition
                 gc.collect()
-
                 cnst.USE_PRETRAINED_FOR_TIER1 = False
+
+            cur_val_loss = []
+            cur_val_acc = []
+            # Evaluating after each epoch for early stopping over validation loss
+            for vp_idx in val_partitions:
+                val_datadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "p" + str(vp_idx) + ".csv", header=None)
+                t_args.t1_x_train, t_args.t1_x_val, t_args.t1_y_train, t_args.t1_y_val = None, val_datadf.iloc[:, 0].values, None, val_datadf.iloc[:, 1].values
+                t_args.val_partition = get_partition_data(None, None, vp_idx, "t1")
+                v_history = evaluate_tier1(t_args)
+                cur_val_loss.append(v_history[0])
+                cur_val_acc.append(v_history[1])
+                del t_args.val_partition
+                gc.collect()
+
+            mean_trn_loss.append(np.mean(cur_trn_loss))
+            mean_trn_acc.append(np.mean(cur_trn_acc))
+            mean_val_loss.append(np.mean(cur_val_loss))
+            mean_val_acc.append(np.mean(cur_val_acc))
+
+            print("Current Epoch Loss:", mean_val_loss[epoch], "Current Epoch Acc:", mean_val_acc[epoch])
+            if mean_val_loss[epoch] < best_val_loss:
+                best_val_loss = mean_val_loss[epoch]
+                # save_model(model, filename)
+                epochs_since_best = 0
+                print("Updating best loss:", best_val_loss)
+            else:
+                epochs_since_best += 1
+                print('{} epochs passed since best val loss of '.format(epochs_since_best), best_val_loss)
+                if 0 < cnst.EARLY_STOPPING_PATIENCE <= epochs_since_best:
+                    print('Triggering early stopping as no improvement found since last {} epochs!'.format(epochs_since_best), "Best Loss:", best_val_loss, "\n\n")
+                    break
         del t_args.t1_model_base
         gc.collect()
+        plot_partition_epoch_history(mean_trn_acc, mean_val_acc, mean_trn_loss, mean_val_loss, "Tier1")
+        print("************************ TIER 1 TRAINING - ENDED ****************************")
     else:
         cnst.USE_PRETRAINED_FOR_TIER1 = False  # Use model trained through Echelon
         print("SKIPPED: Tier-1 Training process")
@@ -365,16 +442,25 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
 
     qstats = QStats(cnst.PERCENTILES, q_sections_by_q_criteria.keys(), q_sections_by_q_criteria.values())
     for q_criterion in q_sections_by_q_criteria:
-        t_args.t2_model_base = get_model2(t_args)
-        print("\n", list(q_sections_by_q_criteria.keys()), "\nChecking Q_Criterion:", q_criterion, q_sections_by_q_criteria[q_criterion].values)
-        # print("************************ Q_Criterion ****************************", q_criterion)
-        t_args.q_sections = q_sections_by_q_criteria[q_criterion]
-
         # TIER-2 TRAINING & PREDICTION OVER B1 DATA for current set of q_sections
-        # Retrieve TPR at FPR=0 or relax till 1%
         if not cnst.SKIP_TIER2_TRAINING:
+            t_args.t2_model_base = get_model2(t_args)
+            print("\n", list(q_sections_by_q_criteria.keys()), "\nChecking Q_Criterion:", q_criterion, q_sections_by_q_criteria[q_criterion].values)
+            # print("************************ Q_Criterion ****************************", q_criterion)
+            t_args.q_sections = q_sections_by_q_criteria[q_criterion]
+
             print("Tier-2 Training over Train B1 [# Partitions: "+str(b1tr_partition_count)+"]")
+            best_val_loss = float('inf')
+            best_val_acc = 0
+            epochs_since_best = 0
+            mean_trn_loss = []
+            mean_trn_acc = []
+            mean_val_loss = []
+            mean_val_acc = []
             for epoch in range(cnst.EPOCHS):
+                print("[OUTER PARTITIONS TIER-2 EPOCH]", epoch + 1)
+                cur_trn_loss = []
+                cur_trn_acc = []
                 for pcount in range(0, b1tr_partition_count):
                     print("Tier-2 Training over Train B1 partition:", pcount)
                     b1traindatadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_train_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
@@ -383,18 +469,55 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
                     t_args.section_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t2")
                     t_args.t2_class_weights = class_weight.compute_class_weight('balanced', np.unique(b1traindatadf.iloc[:, 1]), b1traindatadf.iloc[:, 1])  # Class Imbalance Tackling - Setting class weights
 
-                    train_tier2(t_args)
+                    t2_history = train_tier2(t_args)
 
+                    cur_trn_loss.append(t2_history.history['accuracy'][0])
+                    cur_trn_acc.append(t2_history.history['loss'][0])
                     del t_args.whole_b1_train_partition  # Release Memory
                     del t_args.section_b1_train_partition  # Release Memory
                     gc.collect()
                     cnst.USE_PRETRAINED_FOR_TIER2 = False
+
+                cur_val_loss = []
+                cur_val_acc = []
+                # Evaluating after each epoch for early stopping over validation loss
+                for pcount in range(0, b1val_partition_count):
+                    b1valdatadf = pd.read_csv(cnst.DATA_SOURCE_PATH + cnst.ESC + "b1_val_" + str(fold_index) + "_p" + str(pcount) + ".csv", header=None)
+                    t_args.t2_x_val, t_args.t2_y_val = b1valdatadf.iloc[:,0].values, b1valdatadf.iloc[:,1].values
+                    t_args.wpartition = get_partition_data("b1_val", fold_index, pcount, "t1")
+                    t_args.spartition = get_partition_data("b1_val", fold_index, pcount, "t2")
+                    t_args.q_sections = q_sections_by_q_criteria[q_criterion]
+                    v_history = evaluate_tier2(t_args)
+                    cur_val_loss.append(v_history[0])
+                    cur_val_acc.append(v_history[1])
+                    del t_args.wpartition  # Release Memory
+                    del t_args.spartition  # Release Memory
+                    gc.collect()
+
+                mean_trn_loss.append(np.mean(cur_trn_loss))
+                mean_trn_acc.append(np.mean(cur_trn_acc))
+                mean_val_loss.append(np.mean(cur_val_loss))
+                mean_val_acc.append(np.mean(cur_val_acc))
+
+                print("Current Tier-2 Epoch Loss:", mean_val_loss[epoch], "Current Tier-2 Epoch Acc:", mean_val_acc[epoch])
+                if mean_val_loss[epoch] < best_val_loss:
+                    best_val_loss = mean_val_loss[epoch]
+                    # save_model(model, filename)
+                    epochs_since_best = 0
+                    print("Updating best loss:", best_val_loss)
+                else:
+                    epochs_since_best += 1
+                    print('{} epochs passed since best val loss of '.format(epochs_since_best), best_val_loss)
+                    if 0 < cnst.EARLY_STOPPING_PATIENCE <= epochs_since_best:
+                        print('Tier-2 Triggering early stopping as no improvement found since last {} epochs!'.format(epochs_since_best), "Best Loss:", best_val_loss, "\n\n")
+                        break
+            del t_args.t2_model_base
+            gc.collect()
+            plot_partition_epoch_history(mean_trn_acc, mean_val_acc, mean_trn_loss, mean_val_loss, "Tier2"+str(q_criterion)[:4])
+            print("************************ TIER 2 TRAINING - ENDED ****************************")
         else:
             cnst.USE_PRETRAINED_FOR_TIER2 = False  # Use model trained through Echelon
             print("SKIPPED: Tier-2 Training Process")
-
-        del t_args.t2_model_base
-        gc.collect()
 
         # print("Loading stored B1 Data from Validation set for THD2 selection")
         # val_b1datadf_all = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_val_"+str(fold_index)+"_pkl.csv", header=None)  # xxs.csv
@@ -427,7 +550,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         predict_t2_val_data_all = predict.select_thd_get_metrics_bfn_mfp(cnst.TIER2, predict_t2_val_data_all)
 
         display_probability_chart(predict_t2_val_data_all.ytrue, predict_t2_val_data_all.yprob, predict_t2_val_data_all.thd, "Training_TIER2_PROB_PLOT_" + str(fold_index + 1) + "{:6.2f}".format(q_criterion))
-        #print("FPR: {:6.2f}".format(predict_t2_val_data_all.fpr), "TPR: {:6.2f}".format(predict_t2_val_data_all.tpr), "\tTHD2: {:6.2f}".format(predict_t2_val_data_all.thd))
+        # print("FPR: {:6.2f}".format(predict_t2_val_data_all.fpr), "TPR: {:6.2f}".format(predict_t2_val_data_all.tpr), "\tTHD2: {:6.2f}".format(predict_t2_val_data_all.thd))
 
         curdiff = predict_t2_val_data_all.tpr - predict_t2_val_data_all.fpr
         if curdiff != 0 and curdiff > maxdiff:

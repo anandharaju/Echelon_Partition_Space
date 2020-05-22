@@ -228,6 +228,28 @@ def copy_files(src_path, dst_path, ext, max_size):
     return total_count, total_size
 
 
+def collect_sha():
+    df_info = pd.DataFrame()
+    df = pd.read_csv('D:\\03_GitWorks\\ATI_changes\\data\\ds1_pkl_unique.csv', header=None)
+
+    for i, file in enumerate(df.iloc[:, 0]):
+        if (i+1) % 1000 == 0:
+            print(i+1, "files processed.")
+        try:
+            # if df.iloc[:, 1][i] == 0:
+            #    continue
+            src_path = os.path.join('D:\\08_Dataset\\Internal\\mar2020\\pickle_files', 'ee8c29cc3fb611fb6149cd769871cb9b33e024e9.pkl')
+            with open(src_path, 'rb') as f:
+                cur_pkl = pickle.load(f)
+                df_info = pd.concat([df_info, pd.DataFrame([[cur_pkl["md5"], cur_pkl["sha1"], cur_pkl["sha256"]]], columns=['md5', 'sha1', 'sha256'])])
+        except Exception as e:
+            print(file)
+            print(str(e))
+        break
+    df_info.to_csv('D:\\08_Dataset\\Internal\\mar2020\\Malware_Info.csv', index=False)
+    return
+
+
 if __name__ == '__main__':
     src_path = "D:\\08_Dataset\\VirusTotal\\repo\\all"
     dst_path = "D:\\08_Dataset\\aug24_malware\\"
@@ -237,8 +259,8 @@ if __name__ == '__main__':
     max_files = 110000
     # total_count, total_size = copy_files(src_path, dst_path, ext, max_size)
 
-    sep_files_by_pkl_list()
-
+    #sep_files_by_pkl_list()
+    collect_sha()
     '''
 
     # group_files_by_pkl_list()
