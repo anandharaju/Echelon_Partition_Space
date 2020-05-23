@@ -121,21 +121,24 @@ def train_by_section(args):
 def get_model1(args):
     # prepare TIER-1 model
     model1 = None
+    optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
     if args.resume:
         if cnst.USE_PRETRAINED_FOR_TIER1:
             print("[ CAUTION ] : Resuming with pretrained model for TIER1 - "+args.pretrained_t1_model_name)
             model1 = load_model(args.model_path + args.pretrained_t1_model_name)
-            if cnst.NUM_GPU > 1:
-                model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
-            optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
             model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+            if cnst.NUM_GPU > 1:
+                multi_gpu_model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
+                multi_gpu_model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+                return multi_gpu_model1
         else:
             print("[ CAUTION ] : Resuming with old model")
             model1 = load_model(args.model_path + args.t1_model_name)
-            #if cnst.NUM_GPU > 1:
-            #    model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
-            optimizer = optimizers.Adam(lr=0.001)
-            model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
+            model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+            if cnst.NUM_GPU > 1:
+                multi_gpu_model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
+                multi_gpu_model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
+                return multi_gpu_model1
     else:
         if args.byte:
             model1 = echelon.model(args.t1_max_len, args.t1_win_size)
@@ -143,16 +146,8 @@ def get_model1(args):
             model1 = featuristic.model(args.total_features)
         elif args.fusion:
             model1 = malfusion.model(args.max_len, args.win_size)
-
-        # ##################################################################################################################
-        #                                                  Optimization
-        # ##################################################################################################################
         # optimizer = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-        optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
         model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        # ##################################################################################################################
-        #                                             Hyper-parameter Tuning
-        # ##################################################################################################################
         # param_dict = {'lr': [0.00001, 0.0001, 0.001, 0.1]}
         # model_gs = GridSearchCV(model, param_dict, cv=10)
 
