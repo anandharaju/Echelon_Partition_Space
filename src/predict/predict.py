@@ -161,7 +161,7 @@ def get_bfn_mfp(pObj):
         pObj.boosted_yB2 = pObj.ytrue[boosted_indices]
         pObj.boosted_yprobB2 = pObj.yprob[boosted_indices]
         pObj.boosted_ypredB2 = prediction[boosted_indices]
-        print("Number of files boosted to B2:", len(np.where(prediction == cnst.BENIGN)[0]), "-", len(brow_indices), "=", len(boosted_indices), "Boosting Bound:", pObj.boosting_upper_bound, "Escaped FNs:", len(fn_escaped_by_boosting))
+        # print("Number of files boosted to B2:", len(np.where(prediction == cnst.BENIGN)[0]), "-", len(brow_indices), "=", len(boosted_indices), "Boosting Bound:", pObj.boosting_upper_bound, "Escaped FNs:", len(fn_escaped_by_boosting))
 
     else:
         print("NO BOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOSTING")
@@ -188,7 +188,7 @@ def predict_tier1(model_idx, pobj, fold_index):
     predict_args = DefaultPredictArguments()
     tier1_model = load_model(predict_args.model_path + cnst.TIER1_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
     # model.summary()
-    print("Memory Required:", get_model_memory_usage(predict_args.batch_size, tier1_model))
+    # print("Memory Required:", get_model_memory_usage(predict_args.batch_size, tier1_model))
 
     if cnst.EXECUTION_TYPE[model_idx] == cnst.BYTE:
         pobj.yprob = predict_byte(tier1_model, pobj.partition, pobj.xtrue, predict_args)
@@ -227,7 +227,7 @@ def predict_tier2(model_idx, pobj, fold_index):
     predict_args = DefaultPredictArguments()
     tier2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
 
-    print("Memory Required:", get_model_memory_usage(predict_args.batch_size, tier2_model))
+    # print("Memory Required:", get_model_memory_usage(predict_args.batch_size, tier2_model))
 
     if cnst.EXECUTION_TYPE[model_idx] == cnst.BYTE:
         # pbs.trigger_predict_by_section()
@@ -427,6 +427,9 @@ def init(model_idx, test_partitions, cv_obj, fold_index):
         test_b1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
         test_m1datadf = pd.concat([pd.DataFrame(predict_t1_test_data_partition.xM1), pd.DataFrame(predict_t1_test_data_partition.yM1), pd.DataFrame(predict_t1_test_data_partition.yprobM1)], axis=1)
         test_m1datadf.to_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "m1_test_"+str(fold_index)+"_pkl.csv", header=None, index=None, mode='a')
+
+    del predict_t1_test_data_partition
+    gc.collect()
 
     # test_b1datadf_all = pd.read_csv(cnst.PROJECT_BASE_PATH + cnst.ESC + "data" + cnst.ESC + "b1_test_"+str(fold_index)+"_pkl.csv", header=None)
     # predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1 = test_b1datadf_all.iloc[:, 0], test_b1datadf_all.iloc[:, 1]

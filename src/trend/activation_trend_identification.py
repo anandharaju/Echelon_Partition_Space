@@ -206,7 +206,7 @@ def process_files(args, sd):
     unprocessed = 0
     samplewise_feature_maps = []
     stunted_model = get_stunted_model(args)
-    print("Memory Required:", get_model_memory_usage(cnst.T1_TRAIN_BATCH_SIZE, stunted_model))
+    # print("Memory Required:", get_model_memory_usage(cnst.T1_TRAIN_BATCH_SIZE, stunted_model))
     files = args.t2_x_train
     files_type = args.t2_y_train
 

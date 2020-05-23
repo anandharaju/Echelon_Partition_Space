@@ -8,6 +8,7 @@ from config import constants as cnst
 from analyzers.parse_pe import parse_pe_section_data
 from keras.preprocessing.sequence import pad_sequences
 from collections import OrderedDict
+import gc
 
 
 def preprocess(partition, file_list, max_len):
@@ -29,6 +30,8 @@ def preprocess(partition, file_list, max_len):
     # corpus = [[byte for byte in doc] for doc in corpus]
     len_list = None  # [len(doc) for doc in corpus]
     seq = pad_sequences(corpus, maxlen=max_len, truncating='post', padding='post')  # , value=b'\x00')
+    del partition
+    gc.collect()
     return seq, len_list
 
 
