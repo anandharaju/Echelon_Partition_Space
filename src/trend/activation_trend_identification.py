@@ -216,8 +216,6 @@ def process_files(args, sd):
     # file_whole_bytes = {file[:-4]: args.whole_b1_train_partition[file[:-4]]}
     raw_feature_maps = get_feature_maps(stunted_model, args.whole_b1_train_partition, files)
     del stunted_model
-    del args.whole_b1_train_partition
-    gc.collect()
 
     for i in range(0, len(files)):
         section_bounds, unprocessed, fsize = parse_pe_pkl(i, files[i][:-4], args.section_b1_train_partition[files[i][:-4]], unprocessed)
@@ -232,9 +230,6 @@ def process_files(args, sd):
             # feature_map_histogram(feature_map, prediction)
             samplewise_feature_maps.append(feature_map)
             sd = map_act_to_sec(files_type[i], feature_map, section_bounds, sd)
-
-    del args.section_b1_train_partition
-    gc.collect()
     return sd
 
     # print(section_stat)
@@ -373,6 +368,10 @@ def start_ati_process(args, fold_index, partition_count, sd):
         args.section_b1_train_partition = get_partition_data("b1_train", fold_index, pcount, "t2")
 
         sd = process_files(args, sd)
+
+        del args.whole_b1_train_partition
+        del args.section_b1_train_partition
+        gc.collect()
     return sd
 
 
