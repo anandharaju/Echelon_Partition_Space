@@ -127,19 +127,19 @@ def get_model1(args):
     if args.resume:
         if cnst.USE_PRETRAINED_FOR_TIER1:
             print("[ CAUTION ] : Resuming with pretrained model for TIER1 - "+args.pretrained_t1_model_name)
-            model1 = load_model(args.model_path + args.pretrained_t1_model_name)
-            model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+            model1 = load_model(args.model_path + args.pretrained_t1_model_name, compile=False)
+            # model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
             if cnst.NUM_GPU > 1:
                 multi_gpu_model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
-                multi_gpu_model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+                # multi_gpu_model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
                 return multi_gpu_model1
         else:
             print("[ CAUTION ] : Resuming with old model")
-            model1 = load_model(args.model_path + args.t1_model_name)
-            model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+            model1 = load_model(args.model_path + args.t1_model_name, compile=False)
+            # model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
             if cnst.NUM_GPU > 1:
                 multi_gpu_model1 = multi_gpu_model(model1, gpus=cnst.NUM_GPU)
-                multi_gpu_model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
+                # multi_gpu_model1.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
                 return multi_gpu_model1
     else:
         if args.byte:
@@ -163,18 +163,18 @@ def get_model2(args):
     if args.resume:
         if cnst.USE_PRETRAINED_FOR_TIER2:
             print("[ CAUTION ] : Resuming with pretrained model for TIER2 - "+args.pretrained_t2_model_name)
-            model2 = load_model(args.model_path + args.pretrained_t2_model_name)
+            model2 = load_model(args.model_path + args.pretrained_t2_model_name, compile=False)
             if cnst.NUM_GPU > 1:
                 model2 = multi_gpu_model(model2, gpus=cnst.NUM_GPU)
-            optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
-            model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+            # optimizer = optimizers.Adam(lr=0.001)  # , beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+            # model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         else:
             print("[ CAUTION ] : Resuming with old model")
-            model2 = load_model(args.model_path + args.t2_model_name)
-            # if cnst.NUM_GPU > 1:
-            #    model2 = multi_gpu_model(model2, gpus=cnst.NUM_GPU)
-            optimizer = optimizers.Adam(lr=0.001)
-            model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
+            model2 = load_model(args.model_path + args.t2_model_name, compile=False)
+            if cnst.NUM_GPU > 1:
+                model2 = multi_gpu_model(model2, gpus=cnst.NUM_GPU)
+            # optimizer = optimizers.Adam(lr=0.001)
+            # model2.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=["accuracy"])
 
     else:
         # print("*************************** CREATING new model *****************************")
@@ -282,10 +282,10 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
                 t_args.train_partition = get_partition_data(None, None, tp_idx, "t1")
                 t_history = train_tier1(t_args)
                 try:
-                    cur_trn_loss.append(t_history.history['acc'][0])
+                    cur_trn_acc.append(t_history.history['acc'][0])
                 except Exception as e:
-                    cur_trn_loss.append(t_history.history['accuracy'][0])
-                cur_trn_acc.append(t_history.history['loss'][0])
+                    cur_trn_acc.append(t_history.history['accuracy'][0])
+                cur_trn_loss.append(t_history.history['loss'][0])
                 del t_args.train_partition
                 gc.collect()
                 cnst.USE_PRETRAINED_FOR_TIER1 = False
@@ -470,9 +470,12 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
                     t_args.t2_class_weights = class_weight.compute_class_weight('balanced', np.unique(b1traindatadf.iloc[:, 1]), b1traindatadf.iloc[:, 1])  # Class Imbalance Tackling - Setting class weights
 
                     t2_history = train_tier2(t_args)
+                    try:
+                        cur_trn_acc.append(t2_history.history['acc'][0])
+                    except Exception as e:
+                        cur_trn_acc.append(t2_history.history['accuracy'][0])
 
-                    cur_trn_loss.append(t2_history.history['accuracy'][0])
-                    cur_trn_acc.append(t2_history.history['loss'][0])
+                    cur_trn_loss.append(t2_history.history['loss'][0])
                     del t_args.whole_b1_train_partition  # Release Memory
                     del t_args.section_b1_train_partition  # Release Memory
                     gc.collect()
@@ -556,7 +559,7 @@ def init(model_idx, train_partitions, val_partitions, fold_index):
         if curdiff != 0 and curdiff > maxdiff:
             maxdiff = curdiff
             q_criterion_selected = q_criterion
-            best_t2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
+            best_t2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5", compile=False)
             thd2 = predict_t2_val_data_all.thd
             q_sections_selected = q_sections_by_q_criteria[q_criterion]
             print("Best Q-criterion so far . . . ", q_criterion_selected, predict_t2_val_data_all.thd, predict_t2_val_data_all.fpr, predict_t2_val_data_all.tpr)

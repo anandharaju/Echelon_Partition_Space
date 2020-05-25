@@ -282,7 +282,7 @@ def process_files(args, sd):
 
 
 def get_stunted_model(args):
-    complete_model = load_model(join(args.save_path, args.t1_model_name))
+    complete_model = load_model(join(args.save_path, args.t1_model_name), compile=False)
     # model.summary()
     # redefine model to output right after the sixth hidden layer
     # (ReLU activation layer after convolution - before max pooling)

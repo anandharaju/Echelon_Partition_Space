@@ -57,7 +57,7 @@ def trigger_predict_by_section():
               + '] [MODEL NAME -> ' + model_name + args.model_ext + ']')
 
         # load model
-        model = load_model(args.model_path + model_name + args.model_ext)
+        model = load_model(args.model_path + model_name + args.model_ext, compile=False)
         #model.summary()
 
         pred = predict_by_section(sections, model, fn_list, label, args.batch_size, args.verbose)
