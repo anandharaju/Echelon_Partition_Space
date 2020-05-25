@@ -10,7 +10,7 @@ from config import constants as cnst
 from .predict_args import DefaultPredictArguments, Predict as pObj
 import math
 from plots.plots import display_probability_chart
-from analyzers.collect_exe_files import get_partition_data, partition_pkl_files_by_count
+from analyzers.collect_exe_files import get_partition_data, partition_pkl_files_by_count, partition_pkl_files_by_size
 import gc
 import os
 
@@ -115,10 +115,10 @@ def calculate_prediction_metrics(predict_obj):
 def select_decision_threshold(predict_obj):
     predict_obj.target_fpr = (np.floor((predict_obj.target_fpr / 100) * len(predict_obj.yprob[predict_obj.ytrue == 0])) * 100) / len(predict_obj.yprob[predict_obj.ytrue == 0])
     calibrated_threshold = (np.percentile(predict_obj.yprob[predict_obj.ytrue == 0], q=[100 - predict_obj.target_fpr]) * 100)[0]
-    print("Initial Calibrated Threshold:", calibrated_threshold, predict_obj.target_fpr)
+    # print("Initial Calibrated Threshold:", calibrated_threshold, predict_obj.target_fpr)
     pow = str(calibrated_threshold)[::-1].find('.')
     calibrated_threshold = math.ceil(calibrated_threshold * 10 ** (pow - 1)) / (10 ** (pow - 1))
-    print("Ceiled Threshold:", calibrated_threshold)
+    # print("Ceiled Threshold:", calibrated_threshold)
     selected_threshold = calibrated_threshold if calibrated_threshold < 100.0 else 100.0
 
     temp_ypred = (predict_obj.yprob > (selected_threshold / 100)).astype(int)
@@ -186,7 +186,7 @@ def get_bfn_mfp(pObj):
 
 def predict_tier1(model_idx, pobj, fold_index):
     predict_args = DefaultPredictArguments()
-    tier1_model = load_model(predict_args.model_path + cnst.TIER1_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
+    tier1_model = load_model(predict_args.model_path + cnst.TIER1_MODELS[model_idx] + "_" + str(fold_index) + ".h5", compile=False)
     # model.summary()
     # print("Memory Required:", get_model_memory_usage(predict_args.batch_size, tier1_model))
 
@@ -225,7 +225,7 @@ def select_thd_get_metrics(pobj):
 
 def predict_tier2(model_idx, pobj, fold_index):
     predict_args = DefaultPredictArguments()
-    tier2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5")
+    tier2_model = load_model(predict_args.model_path + cnst.TIER2_MODELS[model_idx] + "_" + str(fold_index) + ".h5", compile=False)
 
     # print("Memory Required:", get_model_memory_usage(predict_args.batch_size, tier2_model))
 
@@ -442,7 +442,7 @@ def init(model_idx, test_partitions, cv_obj, fold_index):
         print(" \n !!!!!      Skipping Tier-2 - B1 set is empty")
         return None
 
-    test_b1_partition_count = partition_pkl_files_by_count("b1_test", fold_index, predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1)
+    test_b1_partition_count = partition_pkl_files_by_count("b1_test", fold_index, predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1) if cnst.PARTITION_BY_COUNT else partition_pkl_files_by_size("b1_test", fold_index, predict_t1_test_data_all.xB1, predict_t1_test_data_all.yB1)
 
     # TIER-2 PREDICTION
     print("Prediction on Testing Data - TIER2 [B1 data]         # Partitions", test_b1_partition_count)  # \t\t\tSection Map Length:", len(section_map))
